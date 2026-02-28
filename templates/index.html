@@ -1,0 +1,3252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="user-role" content="{{ role }}">
+    <meta name="user-name" content="{{ user_name }}">
+    <meta name="user-bus"  content="{{ user_bus }}">
+    <title>St. Joseph's College Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Work+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #1a4d2e;
+            --secondary: #2d6a4f;
+            --accent: #52b788;
+            --light: #95d5b2;
+            --bg: #f8f9fa;
+            --white: #ffffff;
+            --text: #2b2d42;
+            --text-light: #6c757d;
+            --border: #dee2e6;
+            --shadow: rgba(0,0,0,0.1);
+            --red: #dc3545;
+            /* AI Track palette */
+            --trk-bg:      #050a14;
+            --trk-surface: #0b1426;
+            --trk-s2:      #112040;
+            --trk-cyan:    #00e5ff;
+            --trk-orange:  #ff6d00;
+            --trk-green:   #00e676;
+            --trk-red:     #ff1744;
+            --trk-yellow:  #ffd740;
+            --trk-muted:   #4a6a8a;
+            --trk-border:  #1e3a5f;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* ── HEADER ─────────────────────────────────────── */
+        .header {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px var(--shadow);
+            margin-bottom: 25px;
+        }
+        .header h1 { font-family: 'Crimson Pro', serif; color: var(--primary); font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+        .header-subtitle { color: var(--accent); font-size: 1.1rem; font-weight: 600; letter-spacing: 0.03em; margin-top: 4px; }
+
+        /* ── MAIN GRID ───────────────────────────────────── */
+        .main-grid { display: grid; grid-template-columns: 300px 1fr; gap: 25px; }
+
+        /* ── SIDEBAR ─────────────────────────────────────── */
+        .sidebar { background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px var(--shadow); height: fit-content; }
+        .college-info h2 { font-family: 'Crimson Pro', serif; font-size: 1.3rem; color: var(--primary); margin-bottom: 15px; border-bottom: 3px solid var(--accent); padding-bottom: 10px; }
+        .info-section { margin-bottom: 25px; }
+        .info-section p { font-size: 0.9rem; line-height: 1.6; color: var(--text-light); }
+        .info-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .info-item:last-child { border-bottom: none; }
+        .info-label { font-weight: 600; color: var(--text); font-size: 0.85rem; margin-bottom: 3px; }
+        .info-value { color: var(--text-light); font-size: 0.85rem; }
+        .link-btn { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; transition: color 0.3s; }
+        .link-btn:hover { color: var(--secondary); }
+        .notice-card { background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%); color: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .notice-card h4 { font-size: 0.9rem; margin-bottom: 8px; }
+        .notice-card p { font-size: 0.8rem; opacity: 0.95; line-height: 1.5; }
+
+        /* ── CONTENT AREA ────────────────────────────────── */
+        .content-area { background: var(--white); padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px var(--shadow); }
+
+        /* ── CALENDAR ────────────────────────────────────── */
+        .calendar-section { margin-bottom: 30px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-header h3 { font-family: 'Crimson Pro', serif; color: var(--primary); font-size: 1.5rem; }
+        .calendar-nav { display: flex; gap: 10px; align-items: center; }
+        .calendar-nav button { background: var(--bg); border: 1px solid var(--border); width: 35px; height: 35px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .calendar-nav button:hover { background: var(--accent); color: white; border-color: var(--accent); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin-bottom: 25px; }
+        .calendar-day-header { text-align: center; font-weight: 600; color: var(--text-light); font-size: 0.85rem; padding: 10px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: 8px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; }
+        .calendar-day:hover { background: var(--light); }
+        .calendar-day.today { background: var(--red); color: white; font-weight: 600; }
+
+        /* ── MENU ────────────────────────────────────────── */
+        .menu-section h3 { font-family: 'Crimson Pro', serif; color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        .menu-item { background: linear-gradient(135deg, var(--bg) 0%, #ffffff 100%); border: 2px solid var(--border); padding: 20px 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
+        .menu-item::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(82,183,136,0.1), transparent); transition: left 0.5s; }
+        .menu-item:hover::before { left: 100%; }
+        .menu-item:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 8px 25px rgba(82,183,136,0.2); }
+        .menu-item.bus-highlight { border-color: var(--accent); background: linear-gradient(135deg, #e8f7ef 0%, #ffffff 100%); }
+        .menu-icon { font-size: 2.5rem; margin-bottom: 10px; color: var(--accent); transition: transform 0.3s; }
+        .menu-item:hover .menu-icon { transform: scale(1.1); }
+        .menu-label { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+
+        /* ── GENERIC MODAL ───────────────────────────────── */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; animation: fadeIn 0.3s; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 15px; max-width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.3); animation: slideInModal 0.3s; }
+        .modal-header { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 25px; border-radius: 15px 15px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-family: 'Crimson Pro', serif; font-size: 1.8rem; }
+        .close-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: all 0.3s; }
+        .close-btn:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+        .modal-body { padding: 30px; }
+
+        /* ── TABS (Bus Pass) ─────────────────────────────── */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid var(--border); flex-wrap: wrap; }
+        .tab { padding: 12px 20px; background: transparent; border: none; cursor: pointer; font-weight: 500; color: var(--text-light); transition: all 0.3s; border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: 0.9rem; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── FORM ELEMENTS ───────────────────────────────── */
+        .form-section { margin-bottom: 30px; }
+        .section-title { font-family: 'Crimson Pro', serif; font-size: 1.4rem; color: var(--primary); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--light); }
+        .data-table-container { overflow-x: auto; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { background: var(--primary); color: white; padding: 12px; text-align: left; font-weight: 600; font-size: 0.9rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        td input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 0.9rem; }
+        td input:focus { outline: none; border-color: var(--accent); }
+        .action-btn { background: var(--red); color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; transition: all 0.3s; }
+        .action-btn:hover { background: #c92a2a; transform: scale(1.05); }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s; font-size: 0.95rem; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--secondary); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(82,183,136,0.3); }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text); }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent); }
+        .optimization-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .status-indicator { padding: 15px; border-radius: 8px; text-align: center; font-weight: 500; margin-bottom: 20px; }
+        .status-idle { background: var(--bg); color: var(--text-light); }
+        .status-processing { background: #fff3cd; color: #856404; }
+        .status-completed { background: #d1e7dd; color: #0f5132; }
+        .status-error { background: #f8d7da; color: #842029; }
+
+        /* ── RESULTS ─────────────────────────────────────── */
+        .results-container { display: grid; grid-template-columns: 340px 1fr; gap: 20px; margin-bottom: 25px; }
+        .route-list { background: var(--bg); border-radius: 10px; padding: 15px; max-height: 600px; overflow-y: auto; }
+        .route-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; }
+        .route-card:hover { border-color: var(--accent); transform: translateX(5px); }
+        .route-card.active { border-color: var(--accent); background: var(--light); }
+        .route-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .route-id { font-weight: 600; color: var(--primary); }
+        .route-stats { display: flex; gap: 12px; font-size: 0.82rem; color: var(--text-light); flex-wrap: wrap; }
+        .map-container { background: var(--bg); border-radius: 10px; overflow: hidden; height: 600px; }
+        #map { width: 100%; height: 100%; }
+        .route-details { background: var(--bg); padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .pickup-list { list-style: none; }
+        .pickup-item { background: white; padding: 12px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .pickup-number { background: var(--accent); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
+
+        /* ══════════════════════════════════════════════════
+           AI LIVE TRACKING PANEL STYLES
+           ══════════════════════════════════════════════════ */
+        .ai-track-wrap {
+            background: var(--trk-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--trk-border);
+            margin-top: 0;
+        }
+
+        /* Top status bar */
+        .ai-statusbar {
+            background: var(--trk-surface);
+            border-bottom: 1px solid var(--trk-border);
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-statusbar::after {
+            content: '';
+            position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(0,229,255,0.05), transparent);
+            animation: sweep 3s linear infinite;
+        }
+        @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+
+        .ai-logo { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; color: var(--trk-cyan); letter-spacing: 3px; }
+        .ai-logo span { color: var(--trk-orange); }
+        .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--trk-green); animation: pdot 1.5s infinite; flex-shrink: 0; }
+        @keyframes pdot { 0%{box-shadow:0 0 0 0 rgba(0,230,118,.6)} 70%{box-shadow:0 0 0 7px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+        .live-badge { display: flex; align-items: center; gap: 5px; color: var(--trk-green); font-size: 10px; letter-spacing: 2px; }
+        .ai-hstats { display: flex; gap: 14px; margin-left: auto; }
+        .ai-hs { text-align: center; padding: 0 10px; border-left: 1px solid var(--trk-border); }
+        .ai-hs-v { font-size: 16px; font-weight: 700; color: var(--trk-cyan); line-height: 1; }
+        .ai-hs-l { font-size: 8px; color: var(--trk-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        /* Two-column layout: map + sidebar */
+        .ai-body { display: grid; grid-template-columns: 1fr 300px; height: 540px; }
+
+        /* Map canvas */
+        .ai-map-wrap { position: relative; overflow: hidden; }
+        #ai-leaflet-map { width: 100%; height: 100%; }
+        /* Override Leaflet default for dark tile */
+        .leaflet-container { background: #050a14; }
+        .ai-map-overlays { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .ai-ov-tag { background: rgba(5,10,20,.85); border: 1px solid var(--trk-border); border-radius: 4px; padding: 3px 9px; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--trk-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .ai-ov-tag b { color: var(--trk-cyan); }
+
+        /* Sidebar */
+        .ai-sidebar { background: var(--trk-surface); border-left: 1px solid var(--trk-border); display: flex; flex-direction: column; overflow-y: auto; }
+        .ai-sidebar::-webkit-scrollbar { width: 3px; }
+        .ai-sidebar::-webkit-scrollbar-thumb { background: var(--trk-border); }
+        .ai-sec { padding: 12px 14px; border-bottom: 1px solid var(--trk-border); }
+        .ai-sec-title { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--trk-muted); text-transform: uppercase; margin-bottom: 8px; }
+
+        /* Bus cards inside sidebar */
+        .ai-bus-card { background: var(--trk-s2); border-radius: 6px; border: 1px solid var(--trk-border); padding: 10px; margin-bottom: 7px; transition: border-color 0.3s; }
+        .ai-bus-card.deviated { border-color: var(--trk-red); }
+        .ai-bus-card.warning { border-color: var(--trk-yellow); }
+        .ai-bus-hdr { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+        .ai-bus-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .ai-bus-icon.r1 { background: rgba(0,229,255,.12); }
+        .ai-bus-icon.r2 { background: rgba(255,109,0,.12); }
+        .ai-bus-name { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 11px; color: #c8daf0; }
+        .ai-bus-route { font-size: 8px; color: var(--trk-muted); letter-spacing: 1px; }
+        .ai-sbadge { margin-left: auto; font-size: 8px; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px; font-weight: 700; font-family: 'Space Mono', monospace; }
+        .ai-sbadge.ok    { background: rgba(0,230,118,.12); color: var(--trk-green); }
+        .ai-sbadge.warn  { background: rgba(255,215,64,.12); color: var(--trk-yellow); }
+        .ai-sbadge.alert { background: rgba(255,23,68,.12);  color: var(--trk-red); }
+        .ai-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .ai-met { background: rgba(5,10,20,.5); border-radius: 3px; padding: 5px 7px; }
+        .ai-met-v { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--trk-cyan); line-height: 1; }
+        .ai-met-v.warn { color: var(--trk-yellow); }
+        .ai-met-v.alert { color: var(--trk-red); }
+        .ai-met-l { font-size: 7px; color: var(--trk-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+        .ai-devbar { margin-top: 6px; height: 2px; border-radius: 2px; background: var(--trk-s2); overflow: hidden; }
+        .ai-devfill { height: 100%; border-radius: 2px; transition: width .5s ease; }
+        .ai-reroute { font-family: 'Space Mono', monospace; font-size: 8px; color: #ff8a9a; margin-top: 5px; }
+        .ai-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+        .ai-tag { font-size: 7px; letter-spacing: 1px; padding: 1px 5px; border-radius: 2px; border: 1px solid var(--trk-border); color: var(--trk-muted); font-family: 'Space Mono', monospace; }
+        .ai-tag.on  { border-color: var(--trk-cyan); color: var(--trk-cyan); }
+        .ai-tag.off { border-color: var(--trk-red);  color: var(--trk-red); }
+
+        /* Notifications */
+        .ai-notif-list { max-height: 90px; overflow-y: auto; }
+        .ai-notif { background: rgba(255,23,68,.07); border-left: 2px solid var(--trk-red); padding: 4px 7px; margin-bottom: 3px; border-radius: 0 3px 3px 0; font-family: 'Space Mono', monospace; font-size: 8px; color: #ff8a9a; animation: nslide .3s ease; }
+        .ai-notif.info { background: rgba(0,229,255,.07); border-left-color: var(--trk-cyan); color: #80d8e8; }
+        .stop-pin-tip { background:#0b1426 !important; color:#e6edf3 !important; border:1px solid #1e3a5f !important;
+                        font-family:'Space Mono',monospace; font-size:10px; padding:3px 7px;
+                        border-radius:4px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.5) !important; }
+        .leaflet-tooltip.stop-pin-tip::before { border-top-color:#1e3a5f !important; }
+        @keyframes nslide { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+
+        /* Step track */
+        .ai-step-track { display: flex; gap: 3px; flex-wrap: wrap; padding: 8px 14px; }
+        .ai-step-dot { width: 7px; height: 7px; border-radius: 2px; background: var(--trk-s2); border: 1px solid var(--trk-border); transition: all .3s; }
+        .ai-step-dot.done   { background: var(--trk-muted); border-color: var(--trk-muted); }
+        .ai-step-dot.active { background: var(--trk-cyan); border-color: var(--trk-cyan); box-shadow: 0 0 5px var(--trk-cyan); }
+
+        /* Bottom AI legend strip */
+        .ai-legend-strip {
+            background: var(--trk-surface);
+            border-top: 1px solid var(--trk-border);
+            padding: 10px 18px;
+            display: flex; gap: 20px; flex-wrap: wrap;
+        }
+        .ai-feat { display: flex; align-items: center; gap: 6px; }
+        .ai-feat-icon { font-size: 13px; }
+        .ai-feat-txt { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--trk-muted); line-height: 1.3; }
+        .ai-feat-txt b { color: var(--trk-cyan); display: block; font-size: 8px; margin-bottom: 1px; }
+
+        /* ── ANIMATIONS ───────────────────────────────────── */
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes slideInModal { from{opacity:0;transform:translateY(-40px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ── RESPONSIVE ──────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .results-container { grid-template-columns: 1fr; }
+            .menu-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+            .ai-body { grid-template-columns: 1fr; height: auto; }
+            .ai-sidebar { max-height: 360px; }
+        }
+    
+        /* ── Risk badge tooltip ─────────────────────────────── */
+        .risk-badge {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 9px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            cursor: default;
+            user-select: none;
+        }
+        .risk-badge .risk-tip {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            bottom: calc(100% + 7px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 0.72rem;
+            font-weight: 400;
+            line-height: 1.45;
+            padding: 7px 10px;
+            border-radius: 6px;
+            width: 180px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            z-index: 9999;
+            white-space: normal;
+        }
+        .risk-badge .risk-tip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1a1a2e;
+        }
+        .risk-badge:hover .risk-tip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* ── Coming Soon tooltip on portal menu items ──────── */
+        .menu-item.coming-soon {
+            position: relative;
+        }
+        .menu-item.coming-soon::after {
+            content: 'Coming Soon';
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            background: #1a1a2e;
+            color: #e0e0e0;
+            font-size: 0.68rem;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 9999;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+        }
+        .menu-item.coming-soon::before {
+            /* override the shimmer ::before with arrow — only when hovered */
+            z-index: 1;
+        }
+        .menu-item.coming-soon:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        /* Arrow below tooltip */
+        .menu-item.coming-soon .cs-arrow {
+            display: none; /* handled via pseudo-element above */
+        }
+        </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- PORTAL HEADER -->
+    <div class="header" style="position:relative">
+        <h1>St. Joseph&#39;s College of Engineering and Technology, Palai</h1>
+        <p class="header-subtitle">Bus Route Management System</p>
+        <div style="position:absolute;top:14px;right:18px;font-size:0.8rem;color:var(--text-light)">
+            👤 <b style="color:var(--primary)">{{ user_name }}</b>
+            &nbsp;·&nbsp;
+            <a href="/logout" style="color:var(--accent);text-decoration:none;font-weight:500">Logout</a>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="college-info">
+                <h2>Vision of the College</h2>
+                <div class="info-section">
+                    <p>Developing into a world-class, pace-setting Institute of Engineering and Technology with distinct identity and character, meeting the goals and aspirations of the society.</p>
+                </div>
+                <h2>Mission of the College</h2>
+                <div class="info-section">
+                    <p>1. To maintain a conducive infrastructure and learning environment for world class education. 2. To nurture a team of dedicated, competent and research oriented faculty. 3. To endow students with moral &amp; ethical values for their successful career by offering variety of programmes and services.</p>
+                </div>
+                <h2 style="margin-top:25px">Payment Gateway Details</h2>
+                <div class="info-item"><div class="info-label">Merchant Name</div><div class="info-value">ST. JOSEPH'S COLLEGE OF ENGINEERING AND TECHNOLOGY, PALAI (Autonomous)</div></div>
+                <div class="info-item"><div class="info-label">Address</div><div class="info-value">Choondacherry P.O, Palai, Kottayam 686 579, Kerala, India</div></div>
+                <div class="info-item"><div class="info-label">Contact Number</div><div class="info-value">04822239700</div></div>
+                <div class="info-item"><div class="info-label">Privacy Policy</div><a href="#" class="link-btn">View</a></div>
+                <div class="info-item"><div class="info-label">Refund Policy</div><a href="#" class="link-btn">View</a></div>
+                <div class="info-item"><div class="info-label">Hostel Rules &amp; Regulations</div><a href="#" class="link-btn">View</a></div>
+                <div class="notice-card"><h4>📢 Notice</h4><p>Academic Fees, Due, Transport, and Hostel information is accessible inside the Accounts menu</p></div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="content-area">
+            <!-- Calendar -->
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <h3>Calendar</h3>
+                    <div class="calendar-nav">
+                        <button onclick="previousMonth()">◀</button>
+                        <span id="current-month">December 2025</span>
+                        <button onclick="nextMonth()">▶</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendar"></div>
+            </div>
+
+            <!-- Menu Grid -->
+            <div class="menu-section">
+                <h3>Portal Services</h3>
+                <div class="menu-grid">
+                    {% if role == "admin" %}
+                    <div class="menu-item bus-highlight" onclick="openBusPass()">
+                        <div class="menu-icon">🚌</div>
+                        <div class="menu-label">Bus Pass &amp; Tracking</div>
+                    </div>
+                    <div class="menu-item" style="border-color:#00e5ff;background:linear-gradient(135deg,#e6fffe 0%,#ffffff 100%)" onclick="openDriverConsole()">
+                        <div class="menu-icon">📡</div>
+                        <div class="menu-label">Driver Console</div>
+                    </div>
+                    {% elif role == "student" %}
+                    <div class="menu-item bus-highlight" onclick="openStudentTracker()">
+                        <div class="menu-icon">🛰️</div>
+                        <div class="menu-label">Track My Bus</div>
+                    </div>
+                    {% elif role == "driver" %}
+                    <div class="menu-item" style="border-color:#00e5ff;background:linear-gradient(135deg,#e6fffe 0%,#ffffff 100%)" onclick="openDriverConsole()">
+                        <div class="menu-icon">📡</div>
+                        <div class="menu-label">Driver Console</div>
+                    </div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── GENERIC MODAL ────────────────────────────────────── -->
+<div id="generic-modal" class="modal">
+    <div class="modal-content" style="max-width:600px">
+        <div class="modal-header"><h2 id="modal-title">Feature</h2><button class="close-btn" onclick="closeModal('generic-modal')">&times;</button></div>
+        <div class="modal-body"><p>This feature is currently under development.</p></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     BUS PASS MODAL  (full-width, 4 tabs)
+     ══════════════════════════════════════════════════════════ -->
+<div id="bus-pass-modal" class="modal">
+    <div class="modal-content" style="max-width:1440px;width:97%">
+        <div class="modal-header">
+            <h2>🚌 Bus Pass, Route Optimization &amp; AI Live Tracking</h2>
+            <button class="close-btn" onclick="closeModal('bus-pass-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="tabs">
+                {% if role == "admin" %}
+                <button class="tab active"   onclick="switchTab('data-input',   this)">📋 Student Data</button>
+                <button class="tab"          onclick="switchTab('results',      this)">🗺️ Routes &amp; Map</button>
+                {% endif %}
+                <button class="tab {% if role != 'admin' %}active{% endif %}" onclick="switchTab('live-track', this)">🛰️ Live AI Tracking</button>
+                {% if role == "admin" %}
+                <button class="tab"          onclick="switchTab('ai-insights',  this)">🤖 AI Insights</button>
+                {% endif %}
+            </div>
+
+            <!-- ── TAB 1: DATA INPUT ───────────────────────── -->
+            <div id="data-input" class="tab-content{% if role == 'admin' %} active{% endif %}">
+                <div class="form-section">
+                    <h3 class="section-title">Student Location Data</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary"   onclick="addStudentRow()">➕ Add Student</button>
+                        <button class="btn btn-secondary" onclick="uploadCSV()">📁 Upload CSV</button>
+                        <button class="btn btn-secondary" onclick="downloadTemplate()">⬇️ Template</button>
+                        <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Clear All</button>
+                    </div>
+                    <div class="data-table-container">
+                        <table id="student-table">
+                            <thead><tr><th>Student ID</th><th>Student Name</th><th>Email</th><th>Stop Name</th><th>Latitude</th><th>Longitude</th><th>Action</th></tr></thead>
+                            <tbody id="student-table-body"></tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination controls -->
+                    <div id="pagination-controls" style="display:none;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 4px">
+                        <button class="btn btn-secondary" id="pg-prev" onclick="changePage(-1)" style="padding:7px 18px">◀ Prev</button>
+                        <span id="pg-info" style="font-size:0.85rem;color:var(--text-light)"></span>
+                        <button class="btn btn-secondary" id="pg-next" onclick="changePage(1)"  style="padding:7px 18px">Next ▶</button>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3 class="section-title">Optimization Parameters</h3>
+                    <div class="optimization-controls">
+                        <div class="input-group"><label>Bus Capacity</label><input type="number" id="bus-capacity" value="60" min="1"></div>
+                        <div class="input-group"><label>Avg Speed (km/h)</label><input type="number" id="avg-speed" value="30" min="1"></div>
+                        <div class="input-group" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#e8f7ef,#fff);border:1px solid var(--accent);border-radius:8px;padding:12px">
+                            <span style="font-size:1.5rem">🤖</span>
+                            <div>
+                                <div style="font-weight:600;font-size:0.9rem;color:var(--primary)">Auto Bus Count</div>
+                                <div style="font-size:0.78rem;color:var(--text-light);line-height:1.4">Determined automatically by AHP + Fuzzy risk optimisation</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- AHP weight display -->
+                    <div id="ahp-weights-panel" style="display:none;background:#f4f4f4;border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid #ccc;font-size:0.85rem">
+                        <strong>Model Weights Applied</strong>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;color:var(--text-light)">
+                            <div>AHP Priority — Students: <b style="color:var(--primary)">0.7</b></div>
+                            <div>AHP Priority — Distance: <b style="color:var(--primary)">0.2</b></div>
+                            <div>AHP Priority — Cluster: <b style="color:var(--primary)">0.1</b></div>
+                            <div>Routing — Distance: <b style="color:var(--primary)">0.4</b></div>
+                            <div>Routing — AHP Score: <b style="color:var(--primary)">0.6</b></div>
+                            <div>Risk Penalty: <b style="color:var(--primary)">0.2</b></div>
+                        </div>
+                    </div>
+                    <div class="status-indicator status-idle" id="status-indicator">Ready to optimize</div>
+                    <button class="btn btn-primary" style="width:100%;padding:15px;font-size:1.1rem" onclick="runOptimization()">🚀 Run AI Route Optimization</button>
+                </div>
+            </div>
+
+            <!-- ── TAB 2: RESULTS ──────────────────────────── -->
+            <div id="results" class="tab-content">
+                <div class="form-section">
+                    <h3 class="section-title">Route Summary</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-primary"   onclick="exportStudentCSVs()">📥 Export Student CSVs</button>
+                        <button class="btn btn-secondary" onclick="exportSummaryCSV()">📊 Export Summary</button>
+                        <button class="btn btn-secondary" onclick="exportMap()">🗺️ Export Map</button>
+                        {% if role == "admin" %}<button class="btn btn-secondary" onclick="openAssignModal()" style="background:#4361ee;color:#fff;border-color:#4361ee">🚌 Assign Drivers</button>{% endif %}
+                        {% if role == "admin" %}<button class="btn btn-secondary" onclick="openNotifModal()" style="background:#1a4d2e;color:#fff;border-color:#1a4d2e">📧 Send Route Notifications</button>{% endif %}
+                    </div>
+                    <div class="results-container">
+                        <div class="route-list" id="route-list"><p style="text-align:center;color:var(--text-light);padding:20px">Run optimization to see results</p></div>
+                        <div class="map-container"><div id="map"></div></div>
+                    </div>
+                    <div id="route-details-container"></div>
+                </div>
+            </div>
+
+            <!-- ── TAB 2b: ROUTE BUILDER ───────────────────── -->
+
+                        <!-- ── TAB 3: LIVE AI TRACKING ─────────────────── -->
+            <div id="live-track" class="tab-content{% if role != 'admin' %} active{% endif %}">
+                <div class="ai-track-wrap">
+
+                    <!-- ── Status bar ─────────────────────────── -->
+                    <div class="ai-statusbar">
+                        <div class="ai-logo">AI<span>TRK</span></div>
+                        <div class="live-badge"><div class="pulse-dot"></div>LIVE</div>
+                        <div class="ai-hstats">
+                            <div class="ai-hs"><div class="ai-hs-v" id="ai-h-driver">1</div><div class="ai-hs-l">Driver</div></div>
+                            <div class="ai-hs"><div class="ai-hs-v" id="ai-h-dist">—</div><div class="ai-hs-l">Dist km</div></div>
+                            <div class="ai-hs"><div class="ai-hs-v" id="ai-h-eta">—</div><div class="ai-hs-l">ETA min</div></div>
+                            <div class="ai-hs"><div class="ai-hs-v" id="ai-h-alerts">0</div><div class="ai-hs-l">Alerts</div></div>
+                        </div>
+                        <div id="ai-time-tag" style="margin-left:auto;font-size:10px;color:var(--trk-muted)">🕐 --:--</div>
+                    </div>
+
+                    <!-- ── Map + Sidebar ──────────────────────── -->
+                    <div class="ai-body">
+
+                        <!-- MAP -->
+                        <div class="ai-map-wrap" style="position:relative">
+                            <div id="ai-leaflet-map" style="width:100%;height:100%;min-height:480px"></div>
+                            <!-- overlays -->
+                            <div class="ai-map-overlays">
+                                <div class="ai-ov-tag">📍 Kerala, India</div>
+                                <div class="ai-ov-tag" id="ai-gps-tag" style="color:var(--trk-yellow)">📡 Waiting for phone…</div>
+                            </div>
+                            <!-- map button -->
+                            <button onclick="demoFit()" style="position:absolute;bottom:14px;left:14px;z-index:1000;background:#0b1426;color:#00e5ff;border:1px solid #1e3a5f;border-radius:6px;padding:7px 14px;font-size:11px;font-family:Space Mono,monospace;cursor:pointer;letter-spacing:1px">🗺️ FIT MAP</button>
+                        </div>
+
+                        <!-- SIDEBAR -->
+                        <div class="ai-sidebar">
+
+                            <!-- Driver card / Admin bus panel -->
+                            <div class="ai-sec" id="admin-bus-panel">
+                                <div class="ai-sec-title">Bus 1 — Driver</div>
+                                <div class="ai-bus-card" id="drv-card">
+                                    <div class="ai-bus-hdr">
+                                        <div class="ai-bus-icon r1" style="font-size:15px">🚌</div>
+                                        <div>
+                                            <div class="ai-bus-name">BUS 1 &nbsp;<span id="drv-badge" style="font-size:7px;color:var(--trk-yellow);font-family:Space Mono,monospace">⏳ WAITING</span></div>
+                                            <div class="ai-bus-route">LIVE GPS DEMO</div>
+                                        </div>
+                                        <span class="ai-sbadge warn" id="drv-status">IDLE</span>
+                                    </div>
+                                    <div class="ai-metrics">
+                                        <div class="ai-met"><div class="ai-met-v" id="drv-dist">—</div><div class="ai-met-l">km to college</div></div>
+                                        <div class="ai-met"><div class="ai-met-v" id="drv-eta">—</div><div class="ai-met-l">ETA (min)</div></div>
+                                        <div class="ai-met"><div class="ai-met-v" id="drv-spd">—</div><div class="ai-met-l">km/h</div></div>
+                                        <div class="ai-met"><div class="ai-met-v" id="drv-acc">—</div><div class="ai-met-l">accuracy m</div></div>
+                                    </div>
+                                    <!-- distance progress bar -->
+                                    <div style="margin-top:8px;font-family:Space Mono,monospace;font-size:7px;color:var(--trk-muted);margin-bottom:3px">DISTANCE TO COLLEGE</div>
+                                    <div class="ai-devbar"><div class="ai-devfill" id="drv-distbar" style="width:0%;background:var(--trk-cyan)"></div></div>
+                                    <div style="font-family:Space Mono,monospace;font-size:7px;color:var(--trk-muted);margin-top:6px" id="drv-coords">Lat: —&nbsp;&nbsp;Lon: —</div>
+                                    <div style="font-family:Space Mono,monospace;font-size:7px;color:var(--trk-muted);margin-top:2px" id="drv-lastseen">Last ping: —</div>
+                                </div>
+                            </div>
+
+                            <!-- Alerts -->
+                            <div class="ai-sec">
+                                <div class="ai-sec-title">Alerts</div>
+                                <div class="ai-notif-list" id="ai-notif-list">
+                                    <div class="ai-notif info">✅ Ready — open /driver on the phone to begin</div>
+                                </div>
+                            </div>
+
+                            <!-- Quick setup guide -->
+                            <div class="ai-sec">
+                                <div class="ai-sec-title" style="cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">📱 Setup Guide ▾</div>
+                                <div id="drv-guide" style="font-family:Space Mono,monospace;font-size:8px;color:var(--trk-muted);line-height:2">
+                                    <div style="color:var(--trk-cyan);margin:4px 0 2px">💻 On your computer</div>
+                                    <div>1. Open a terminal</div>
+                                    <div>2. Run: <span style="color:var(--trk-yellow)">ngrok http 5000</span></div>
+                                    <div>3. Copy the <span style="color:var(--trk-yellow)">https://xxxx.ngrok-free.app</span> URL</div>
+                                    <div style="color:var(--trk-cyan);margin:6px 0 2px">📱 On the phone</div>
+                                    <div>4. Open that URL + <span style="color:var(--trk-yellow)">/driver</span></div>
+                                    <div>5. Allow location when asked</div>
+                                    <div>6. Enter Bus ID: <span style="color:var(--trk-yellow)">BUS101</span></div>
+                                    <div>7. Tap <span style="color:var(--trk-green)">▶ Start Tracking</span></div>
+                                    <div style="color:var(--trk-cyan);margin:6px 0 2px">🗺️ Here</div>
+                                    <div>8. Map updates every 5 s 📡</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Bottom strip ───────────────────────── -->
+                    <div class="ai-legend-strip">
+                        <div class="ai-feat"><div class="ai-feat-icon">📡</div><div class="ai-feat-txt"><b>Real Phone GPS</b>Via ngrok tunnel</div></div>
+                        <div class="ai-feat"><div class="ai-feat-icon">📏</div><div class="ai-feat-txt"><b>Haversine</b>Distance to college</div></div>
+                        <div class="ai-feat"><div class="ai-feat-icon">⏱️</div><div class="ai-feat-txt"><b>Live ETA</b>Dist ÷ speed</div></div>
+                        <div class="ai-feat"><div class="ai-feat-icon">🛣️</div><div class="ai-feat-txt"><b>GPS Trail</b>Position history</div></div>
+                        <div class="ai-feat"><div class="ai-feat-icon">🔄</div><div class="ai-feat-txt"><b>5s Polling</b>Auto refresh</div></div>
+                        <div class="ai-feat"><div class="ai-feat-icon">🎓</div><div class="ai-feat-txt"><b>College Pin</b>Destination marker</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── TAB 4: AI INSIGHTS ──────────────────────── -->
+            <div id="ai-insights" class="tab-content">
+                <h3 class="section-title">How This System Works</h3>
+                <p style="color:var(--text-light);font-size:0.88rem;margin-bottom:20px;line-height:1.6">
+                    This portal uses a combination of machine learning and operations research to automatically plan safe, efficient bus routes for college transport. Here is what happens at each step.
+                </p>
+
+                <div style="display:flex;flex-direction:column;gap:16px" id="insights-grid">
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #52b788;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">📋</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Step 1 — Upload Student Data</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">You upload a CSV with Student ID, Name, Email, and Stop Name. The system automatically looks up the GPS coordinates (latitude and longitude) for each stop using a built-in reference table of all known college bus stops. Students sharing the same stop are grouped together for routing.</p>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #9d4edd;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">🌦️</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Step 2 — Risk Scoring per Stop</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">Each stop is assessed for travel risk using a machine learning model (<code>risk_model.pkl</code>) trained on historical Indian road accident data combined with weather records. For each stop, the system checks current weather conditions — rainfall, visibility, and time of day — and the model predicts the probability of a hazardous journey. This gives every stop a risk score shown as a colour-coded percentage.</p>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #00e5ff;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">📐</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Step 3 — Stop Priority Scoring (AHP)</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">The Analytic Hierarchy Process (AHP) gives each stop a priority score based on three factors: how many students board there (weighted 70%), how far the stop is from college (20%), and a general cluster factor (10%). Stops with more students and those farther from college are prioritised to be served first.</p>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #f77f00;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">🚌</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Step 4 — Route Optimisation</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">A greedy algorithm builds routes by repeatedly picking the next best stop, balancing three things: distance to travel, the AHP priority score, and the risk penalty. Higher-risk stops increase the cost of including them in a route, so the algorithm naturally avoids grouping multiple risky stops in the same bus. Each bus fills to its seating capacity before a new one is started — the number of buses needed is determined automatically.</p>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #e63946;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">🛰️</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Step 5 — Live Tracking &amp; Alerts</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">Once routes are active, the Live AI Tracking tab monitors each bus in real time using GPS. If a bus strays more than 1.5 km from its planned corridor, a deviation alert fires and the nearest re-entry point on the route is shown. Arrival time estimates are updated continuously based on current speed, and a confidence margin is shown so you know how reliable the ETA is.</p>
+                        </div>
+                    </div>
+
+                    <div style="background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid #ffd740;display:flex;gap:16px;align-items:flex-start">
+                        <div style="font-size:1.8rem;flex-shrink:0">📊</div>
+                        <div>
+                            <h4 style="color:#1a4d2e;margin-bottom:6px;font-size:0.95rem">Exports</h4>
+                            <p style="font-size:0.85rem;color:#6c757d;line-height:1.6;margin:0">From the Routes &amp; Map tab you can export two types of files. <strong>Export Student CSVs</strong> generates one file per route listing every student assigned to that bus, with their stop name and coordinates — useful for distributing to drivers or transport staff. <strong>Export Summary</strong> gives a single CSV with route-level statistics including distance, estimated time, number of students, load percentage, and average risk score.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div><!-- modal-body -->
+    </div><!-- modal-content -->
+</div><!-- bus-pass-modal -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PORTAL: Calendar
+// ═══════════════════════════════════════════════════════════════
+let currentDate = new Date();
+function generateCalendar() {
+    const y = currentDate.getFullYear(), m = currentDate.getMonth();
+    const firstDay = new Date(y,m,1).getDay();
+    const days = new Date(y,m+1,0).getDate();
+    const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('current-month').textContent = `${names[m]} ${y}`;
+    const cal = document.getElementById('calendar'); cal.innerHTML = '';
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+        const h = document.createElement('div'); h.className = 'calendar-day-header'; h.textContent = d; cal.appendChild(h);
+    });
+    for (let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='calendar-day';cal.appendChild(e);}
+    const today = new Date();
+    for (let d=1;d<=days;d++){
+        const div=document.createElement('div'); div.className='calendar-day'; div.textContent=d;
+        if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate()) div.classList.add('today');
+        cal.appendChild(div);
+    }
+}
+function previousMonth(){ currentDate.setMonth(currentDate.getMonth()-1); generateCalendar(); }
+function nextMonth(){      currentDate.setMonth(currentDate.getMonth()+1); generateCalendar(); }
+
+// ═══════════════════════════════════════════════════════════════
+// PORTAL: Modals
+// ═══════════════════════════════════════════════════════════════
+function openModal(title){
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('generic-modal').classList.add('active');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function openBusPass(){
+    document.getElementById('bus-pass-modal').classList.add('active');
+    setTimeout(()=>{ initLeafletMap(); initAITracker(); initRBMap(); }, 350);
+}
+function openDriverConsole(){
+    window.location.href = '/driver';
+}
+function openStudentTracker(){
+    document.getElementById('bus-pass-modal').classList.add('active');
+    setTimeout(()=>{
+        initAITracker();
+        _startLivePolling();
+        const tabs = document.querySelectorAll('.tab');
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        document.getElementById('live-track').classList.add('active');
+        tabs.forEach(t=>{ t.classList.toggle('active', t.textContent.includes('Live')); });
+        setTimeout(()=>{ if(aiLiveMap) aiLiveMap.invalidateSize(); }, 150);
+    }, 350);
+}
+window.onclick = e => { if(e.target.classList.contains('modal')) e.target.classList.remove('active'); };
+
+function switchTab(name, btn){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    document.getElementById(name).classList.add('active');
+    if(name==='live-track'){
+        setTimeout(()=>{ if(aiLiveMap) aiLiveMap.invalidateSize(); },120);
+        _startLivePolling();   // begin polling /api/live-status when tab is open
+    } else {
+        _stopLivePolling();    // pause polling when tab is not visible
+    }
+    if(name==='route-builder'){ setTimeout(()=>{ initRBMap(); if(rbMap) rbMap.invalidateSize(); },120); }
+    if(name==='results'){ setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); },120); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PORTAL: Student table with pagination (50 rows per page)
+// Starts empty — data only appears after CSV upload or manual add
+// ═══════════════════════════════════════════════════════════════
+const PAGE_SIZE = 50;
+let allStudentRows = [];   // master array of row data objects
+let currentPage   = 0;
+
+function renderPage() {
+    const tbody = document.getElementById('student-table-body');
+    tbody.innerHTML = '';
+    const start = currentPage * PAGE_SIZE;
+    const slice = allStudentRows.slice(start, start + PAGE_SIZE);
+
+    slice.forEach((d, localIdx) => {
+        const globalIdx = start + localIdx;
+        const r = tbody.insertRow();
+        r.dataset.idx = globalIdx;
+        const safeVal = v => (v !== null && v !== undefined) ? String(v) : '';
+        // Column order: Student ID | Name | Stop Name | Latitude | Longitude | Action
+        r.innerHTML =
+            `<td><input type="text"  value="${safeVal(d.id)}"    onchange="updateRow(${globalIdx},'id',this.value)"></td>`
+          + `<td><input type="text"  value="${safeVal(d.name)}"  onchange="updateRow(${globalIdx},'name',this.value)"></td>`
+          + `<td><input type="email" value="${safeVal(d.email)}" onchange="updateRow(${globalIdx},'email',this.value)" placeholder="student@email.com"></td>`
+          + `<td><input type="text"  value="${safeVal(d.stop)}"  onchange="updateRow(${globalIdx},'stop',this.value)"></td>`
+          + `<td><input type="number" step="0.000001" value="${safeVal(d.lat)}" onchange="updateRow(${globalIdx},'lat',this.value)" placeholder="auto"></td>`
+          + `<td><input type="number" step="0.000001" value="${safeVal(d.lon)}" onchange="updateRow(${globalIdx},'lon',this.value)" placeholder="auto"></td>`
+          + `<td><button class="action-btn" onclick="deleteRowByIdx(${globalIdx})">Delete</button></td>`;
+    });
+
+    const ctrl = document.getElementById('pagination-controls');
+    const total = allStudentRows.length;
+    if (total > PAGE_SIZE) {
+        ctrl.style.display = 'flex';
+        const totalPages = Math.ceil(total / PAGE_SIZE);
+        document.getElementById('pg-info').textContent =
+            `Page ${currentPage + 1} of ${totalPages}  (${total} students total)`;
+        document.getElementById('pg-prev').disabled = currentPage === 0;
+        document.getElementById('pg-next').disabled = currentPage >= totalPages - 1;
+    } else {
+        ctrl.style.display = 'none';
+    }
+}
+
+function changePage(dir) {
+    const totalPages = Math.ceil(allStudentRows.length / PAGE_SIZE);
+    currentPage = Math.max(0, Math.min(currentPage + dir, totalPages - 1));
+    renderPage();
+}
+
+function updateRow(idx, field, val) {
+    if (allStudentRows[idx]) allStudentRows[idx][field] = val;
+}
+
+function deleteRowByIdx(idx) {
+    allStudentRows.splice(idx, 1);
+    // Clamp page if needed
+    const totalPages = Math.max(1, Math.ceil(allStudentRows.length / PAGE_SIZE));
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
+    renderPage();
+}
+
+// Keep legacy deleteRow working for any manually-added rows
+function deleteRow(btn) {
+    const row = btn.parentNode.parentNode;
+    const idx = parseInt(row.dataset.idx);
+    if (!isNaN(idx)) deleteRowByIdx(idx);
+}
+
+function addStudentRow() {
+    allStudentRows.push({ id: '', name: '', email: '', stop: '', lat: '', lon: '' });
+    currentPage = Math.floor((allStudentRows.length - 1) / PAGE_SIZE);
+    renderPage();
+}
+
+function clearAllData() {
+    if (confirm('Clear all student data?')) {
+        allStudentRows = [];
+        currentPage = 0;
+        renderPage();
+        clearOptCache();
+        const si = document.getElementById('status-indicator');
+        si.className = 'status-indicator status-idle';
+        si.textContent = 'Ready to optimize';
+    }
+}
+
+// ── Load mock dataset students for ACTIVE_DATE into the manual table ──
+function loadDatasetToTable(){
+    const filtered = getStudentsForDate(ACTIVE_DATE);
+    if(!filtered.length){ alert(`No students in mock dataset for ${ACTIVE_DATE}`); return; }
+    allStudentRows = filtered.map(s => ({
+        id:   s.id,
+        name: s.name,
+        lat:  s.lat,
+        lon:  s.lon,
+        stop: s.boarding_point
+    }));
+    currentPage = 0;
+    renderPage();
+    const si = document.getElementById('status-indicator');
+    si.className = 'status-indicator status-completed';
+    si.textContent = `Loaded ${filtered.length} students from mock dataset for ${ACTIVE_DATE}`;
+}
+
+// ── Geocode a stop name using MOCK_REFERENCE_ROUTES first,
+//    then Nominatim API as fallback. Returns {lat, lon} or null.
+async function geocodeStopName(stopName) {
+    // 1. Check mock reference routes (instant, no network)
+    const coords = lookupStopCoords(stopName);
+    if (coords) return coords;
+
+    // 2. Nominatim fallback — searches Kerala, India context
+    try {
+        const q = encodeURIComponent(stopName + ', Kerala, India');
+        const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+        const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const results = await resp.json();
+        if (results.length) {
+            return { lat: parseFloat(results[0].lat), lon: parseFloat(results[0].lon) };
+        }
+    } catch(e) { /* network unavailable — fall through */ }
+
+    return null;  // could not geocode
+}
+
+// ── collectStudentData — reads ALL allStudentRows (not just current page).
+//    Returns array with lat/lon for every row that has them.
+//    Rows without lat/lon are flagged needsGeocode=true for geocodeAndCollect().
+function collectStudentData() {
+    const data = [];
+    for (const d of allStudentRows) {
+        const id   = (d.id   || '').trim();
+        const name = (d.name || '').trim();
+        const stop = (d.stop || '').trim();
+        if (!id || !name) continue;
+        const lat = parseFloat(d.lat);
+        const lng = parseFloat(d.lon);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                alert(`Invalid coordinates for ${name}`); return null;
+            }
+            data.push({ id, name, lat, lng, stopName: stop || name });
+        } else {
+            // No coords — geocodeAndCollect() will resolve this
+            data.push({ id, name, lat: null, lng: null, stopName: stop || name, needsGeocode: true });
+        }
+    }
+    return data;
+}
+
+// ── geocodeAndCollect — resolves missing coords then returns full valid list.
+//    Called by runOptimization() so geocoding happens before routing.
+async function geocodeAndCollect(si) {
+    const raw = collectStudentData();
+    if (!raw) return null;
+
+    const needsGeo = raw.filter(s => s.needsGeocode);
+    if (!needsGeo.length) return raw;  // all have coords already
+
+    si.className = 'status-indicator status-processing';
+    si.textContent = `Geocoding ${needsGeo.length} stop(s) without coordinates…`;
+
+    // Deduplicate stop names to minimise API calls
+    const uniqueStops = [...new Set(needsGeo.map(s => s.stopName))];
+    const geoCache = {};
+
+    for (const stopName of uniqueStops) {
+        const result = await geocodeStopName(stopName);
+        geoCache[stopName] = result;
+        if (!result) console.warn(`Could not geocode: "${stopName}"`);
+    }
+
+    // Apply geocoded coords back, drop any that couldn't be resolved
+    const resolved = [];
+    const failed = [];
+    for (const s of raw) {
+        if (!s.needsGeocode) {
+            resolved.push(s);
+        } else {
+            const coords = geoCache[s.stopName];
+            if (coords) {
+                resolved.push({ ...s, lat: coords.lat, lng: coords.lon, needsGeocode: false });
+            } else {
+                failed.push(s.stopName);
+            }
+        }
+    }
+
+    if (failed.length) {
+        const unique = [...new Set(failed)];
+        alert(`Could not find coordinates for: ${unique.join(', ')}\n\nThese students will be skipped. Add coordinates manually or check stop names.`);
+    }
+
+    // Write resolved coords back into allStudentRows so table shows them
+    let ri = 0;
+    for (let i = 0; i < allStudentRows.length; i++) {
+        const row = allStudentRows[i];
+        if (!parseFloat(row.lat) && !parseFloat(row.lon)) {
+            const match = resolved.find(r => r.id === row.id);
+            if (match) {
+                allStudentRows[i].lat = match.lat;
+                allStudentRows[i].lon = match.lng;
+            }
+        }
+    }
+    renderPage();  // refresh table so newly-geocoded coords are visible
+
+    return resolved.filter(s => s.lat && s.lng);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PORTAL: Route Optimization (AHP + ML Risk, auto bus count)
+// ═══════════════════════════════════════════════════════════════
+let studentData=[], routeResults=null, leafletMap=null, mapLayers=[];
+
+// ── Persistent caches — survive between optimization runs ─────
+// Cleared only when new student data is uploaded (clearOptCache)
+let _cachedStudents  = null;   // geocoded student list after first run
+let _cachedRiskMap   = null;   // stop→risk_prob map from Flask
+let _cachedScoredStops = null; // AHP-scored stops (depends on student data, not cap/spd)
+let _cachedDataHash  = null;   // hash of allStudentRows to detect CSV re-uploads
+
+function _hashRows(rows) {
+    // Fast fingerprint: join first+last ID and total count
+    if (!rows.length) return '';
+    return `${rows.length}|${rows[0].id}|${rows[rows.length-1].id}|${rows[0].stop}`;
+}
+
+function clearOptCache() {
+    _cachedStudents    = null;
+    _cachedRiskMap     = null;
+    _cachedScoredStops = null;
+    _cachedDataHash    = null;
+}
+
+// Call this whenever new CSV is uploaded so next run does a full refresh
+const _origParseCSV = typeof parseCSV === 'function' ? parseCSV : null;
+
+async function runOptimization(){
+    const cap = parseInt(document.getElementById('bus-capacity').value) || BUS_CAPACITY_DEFAULT;
+    const spd = parseInt(document.getElementById('avg-speed').value)    || AVERAGE_SPEED_KPH;
+    const si  = document.getElementById('status-indicator');
+
+    if (!allStudentRows.length) {
+        si.className = 'status-indicator status-error';
+        si.textContent = '✗ No student data — please upload a CSV or add students manually';
+        return;
+    }
+
+    const currentHash = _hashRows(allStudentRows);
+    const dataChanged = currentHash !== _cachedDataHash;
+
+    // ── Phase 1: Geocode (skipped if data unchanged) ───────────
+    if (dataChanged || !_cachedStudents) {
+        si.className = 'status-indicator status-processing';
+        si.textContent = '⚙️ Preparing student data…';
+
+        const students = await geocodeAndCollect(si);
+        if (!students || !students.length) {
+            si.className = 'status-indicator status-error';
+            si.textContent = '✗ No valid student locations — check stop names or add coordinates';
+            return;
+        }
+        _cachedStudents = students;
+        _cachedDataHash = currentHash;
+        _cachedRiskMap     = null;   // force risk re-fetch
+        _cachedScoredStops = null;
+    }
+
+    // ── Phase 2: Risk scores from Flask (skipped if data unchanged) ──
+    if (dataChanged || !_cachedRiskMap) {
+        si.className = 'status-indicator status-processing';
+        si.textContent = `⚙️ Fetching risk scores for ${_cachedStudents.length} students…`;
+        try {
+            // Aggregate to unique stops first so we send minimal API calls
+            const stopMap = {};
+            for (const s of _cachedStudents) {
+                const lon = s.lng || s.lon;
+                const key = `${parseFloat(s.lat).toFixed(5)},${parseFloat(lon).toFixed(5)}`;
+                if (!stopMap[key]) stopMap[key] = { lat: s.lat, lon };
+            }
+            _cachedRiskMap = await fetchRiskScores(Object.values(stopMap));
+            _cachedScoredStops = null;   // recompute AHP with new risk scores
+        } catch(e) {
+            si.className = 'status-indicator status-error';
+            si.textContent = `✗ Risk API error: ${e.message}`;
+            console.error(e);
+            return;
+        }
+    }
+
+    // ── Phase 3: AHP scoring (skipped if students + risk unchanged) ──
+    // Only cap/speed changed → skip straight to routing
+    if (!_cachedScoredStops) {
+        const stopMap = {};
+        for (const s of _cachedStudents) {
+            const lon = s.lng || s.lon;
+            const key = `${parseFloat(s.lat).toFixed(5)},${parseFloat(lon).toFixed(5)}`;
+            if (!stopMap[key]) {
+                stopMap[key] = {
+                    lat: s.lat, lng: lon,
+                    stopName: s.stopName || s.boarding_point || 'Stop',
+                    name:     s.stopName || s.name || 'Stop',
+                    students: 0, studentList: []
+                };
+            }
+            stopMap[key].students++;
+            if (s.id) stopMap[key].studentList.push({ id: s.id, name: s.name || '' });
+        }
+        _cachedScoredStops = calculateAHPScores(Object.values(stopMap), _cachedRiskMap);
+    }
+
+    // ── Phase 4: Routing — always re-runs (instant, pure JS) ───
+    si.className = 'status-indicator status-processing';
+    si.textContent = `⚙️ Building routes (cap=${cap}, speed=${spd} km/h)…`;
+
+    try {
+        // Run greedy routing synchronously — takes <10ms even for 200 students
+        const busRoutes = greedyCapacityRoutes(_cachedScoredStops, cap);
+        const COLORS = ['#e63946','#06ffa5','#4361ee','#f77f00','#9d4edd','#2a9d8f','#e9c46a','#264653'];
+
+        const routes = busRoutes.map((busRoute, i) => {
+            const route = busRoute.stops;
+            const stopsSeq = [{lat: COLLEGE.lat, lng: COLLEGE.lng, name:'College', stopName:'College'}];
+            let rem = [...route], cur = COLLEGE;
+            while (rem.length) {
+                let ni = 0, md = Infinity;
+                rem.forEach((s, j) => {
+                    const d = haversine(cur.lat, cur.lng, s.lat, s.lng || s.lon);
+                    if (d < md) { md = d; ni = j; }
+                });
+                stopsSeq.push(rem[ni]);
+                cur = rem[ni];
+                rem.splice(ni, 1);
+            }
+            const { totalDist, timeMins } = calculateRouteMetrics(stopsSeq, spd);
+            const studentsCount = route.reduce((a, s) => a + (s.students || 1), 0);
+            const loadPct       = Math.round((studentsCount / cap) * 100);
+            const avgRisk = route.reduce((a, s) => a + s.riskScore, 0) / Math.max(route.length, 1);
+            const avgAHP  = route.reduce((a, s) => a + s.ahpScore,  0) / Math.max(route.length, 1);
+            const { conf: etaConf, margin: etaMargin } = etaRiskConfidence(avgRisk);
+            return {
+                id: `Route ${i+1}`,
+                stops: stopsSeq,
+                totalDistance:  totalDist.toFixed(2),
+                estimatedTime:  Math.round(timeMins),
+                studentsCount, capacity: cap, loadPct,
+                color:   COLORS[i % COLORS.length],
+                avgRisk:       avgRisk.toFixed(4),
+                avgAHP:        avgAHP.toFixed(4),
+                etaConf, etaMargin,
+                stopSequence:  ['College', ...route.map(s => s.stopName || s.name), 'College'].join(' → '),
+                // Pass through a representative breakdown (from highest-risk stop)
+                riskBreakdown: route.reduce((best, s) =>
+                    (!best || (s.riskScore > (best._score||0)))
+                        ? {...(s.riskBreakdown||{}), _score: s.riskScore}
+                        : best, null)
+            };
+        });
+
+        routeResults = { routes, college: COLLEGE, activeDate: ACTIVE_DATE };
+        studentData  = _cachedStudents;
+
+        si.className = 'status-indicator status-completed';
+        si.textContent = `✓ Done — ${routes.length} route(s) | ${_cachedStudents.length} students | cap ${cap} | ${spd} km/h`;
+        updateAHPWeightsPanel();
+        document.getElementById('ahp-weights-panel').style.display = 'block';
+        displayResults();
+        switchTab('results', document.querySelectorAll('.tab')[1]);
+    } catch(e) {
+        si.className   = 'status-indicator status-error';
+        si.textContent = `✗ Error: ${e.message}`;
+        console.error(e);
+    }
+}
+
+// ── Convert student rows to optimizeRoutes input format ────────
+// Uses allStudentRows (uploaded/manual data) if present,
+// otherwise falls back to mock dataset for the active date.
+function getStudentsForActiveDate(){
+    if(allStudentRows.length){
+        return allStudentRows
+            .filter(s => s.lat && s.lon)
+            .map(s => ({
+                id:       s.id,
+                name:     s.name,
+                lat:      parseFloat(s.lat),
+                lng:      parseFloat(s.lon),
+                stopName: s.stop,
+                date:     ACTIVE_DATE
+            }));
+    }
+    return getStudentsForDate(ACTIVE_DATE).map(s => ({
+        id:       s.id,
+        name:     s.name,
+        lat:      s.lat,
+        lng:      s.lon,
+        stopName: s.boarding_point,
+        date:     s.date
+    }));
+}
+
+// ── Dynamically render AHP weights panel with live constants ───
+function updateAHPWeightsPanel(){
+    const p = document.getElementById('ahp-weights-panel');
+    if(!p) return;
+    const activeDate = routeResults && routeResults.activeDate ? routeResults.activeDate : ACTIVE_DATE;
+    p.innerHTML = `
+        <strong>Model Weights Applied</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;color:var(--text-light);font-size:0.82rem">
+            <div>AHP Priority — Students: <b style="color:var(--primary)">${AHP_PRI[0]}</b></div>
+            <div>AHP Priority — Distance: <b style="color:var(--primary)">${AHP_PRI[1]}</b></div>
+            <div>AHP Priority — Cluster:  <b style="color:var(--primary)">${AHP_PRI[2]}</b></div>
+            <div>Routing — Distance:      <b style="color:var(--primary)">${AHP_ROU[0]}</b></div>
+            <div>Routing — AHP Score:     <b style="color:var(--primary)">${AHP_ROU[1]}</b></div>
+            <div>Risk Penalty Weight: <b style="color:var(--primary)">${RISK_W}</b> × (1 + risk_score)</div>
+        </div>
+        <div style="margin-top:8px;padding:6px 10px;background:#e8f7ef;border-radius:6px;font-size:0.8rem;color:var(--primary)">
+            📅 Active Date: <b>${activeDate}</b> &nbsp;|&nbsp;
+            🚌 Bus Capacity: <b>${routeResults ? routeResults.routes[0]&&routeResults.routes[0].capacity : BUS_CAPACITY_DEFAULT}</b> &nbsp;|&nbsp;
+            🚗 Avg Speed: <b>${document.getElementById('avg-speed').value||AVERAGE_SPEED_KPH} km/h</b>
+        </div>`;
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+    const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ██████╗  █████╗ ████████╗ █████╗ ███████╗███████╗████████╗
+// ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝
+// ██║  ██║███████║   ██║   ███████║███████╗█████╗     ██║
+// ██║  ██║██╔══██║   ██║   ██╔══██║╚════██║██╔══╝     ██║
+// ██████╔╝██║  ██║   ██║   ██║  ██║███████║███████╗   ██║
+// ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝
+// SIMULATION LAYER — mirrors Python CSV datasets
+// ═══════════════════════════════════════════════════════════════
+
+// ── ACTIVE DATE FILTER (mirrors Python ACTIVE_DATE) ───────────
+const ACTIVE_DATE = "2026-01-08";
+
+// ── MOCK: students.csv ────────────────────────────────────────
+// Fields: id, name, boarding_point, lat, lon, date, route_id
+const MOCK_STUDENTS = [
+    {id:"S001", name:"Arun Kumar",       boarding_point:"Thodupuzha",   lat:9.7600, lon:76.7400, date:"2026-01-08", route_id:"R1"},
+    {id:"S002", name:"Priya Menon",      boarding_point:"Palai",        lat:9.7450, lon:76.7550, date:"2026-01-08", route_id:"R1"},
+    {id:"S003", name:"Rahul Raj",        boarding_point:"Muttom",       lat:9.7700, lon:76.7300, date:"2026-01-08", route_id:"R1"},
+    {id:"S004", name:"Sneha Thomas",     boarding_point:"Erattupetta",  lat:9.7350, lon:76.7650, date:"2026-01-08", route_id:"R2"},
+    {id:"S005", name:"Vishnu Das",       boarding_point:"Kanjirapally", lat:9.7550, lon:76.7450, date:"2026-01-08", route_id:"R2"},
+    {id:"S006", name:"Anu George",       boarding_point:"Pala",         lat:9.7123, lon:76.6890, date:"2026-01-08", route_id:"R1"},
+    {id:"S007", name:"Jithin Mathew",    boarding_point:"Ettumanoor",   lat:9.6780, lon:76.6450, date:"2026-01-08", route_id:"R2"},
+    {id:"S008", name:"Meera Nair",       boarding_point:"Kottayam",     lat:9.5916, lon:76.5222, date:"2026-01-08", route_id:"R2"},
+    {id:"S009", name:"Renjith Paul",     boarding_point:"Kidangoor",    lat:9.6500, lon:76.6800, date:"2026-01-08", route_id:"R1"},
+    {id:"S010", name:"Sandra Jose",      boarding_point:"Changanassery", lat:9.4420, lon:76.5400, date:"2026-01-08", route_id:"R2"},
+    {id:"S011", name:"Tom Varghese",     boarding_point:"Thodupuzha",   lat:9.7600, lon:76.7400, date:"2026-01-08", route_id:"R1"},
+    {id:"S012", name:"Divya Krishnan",   boarding_point:"Palai",        lat:9.7450, lon:76.7550, date:"2026-01-08", route_id:"R1"},
+    {id:"S013", name:"Nidhi Pillai",     boarding_point:"Erattupetta",  lat:9.7350, lon:76.7650, date:"2026-01-08", route_id:"R2"},
+    {id:"S014", name:"Arjun Suresh",     boarding_point:"Muttom",       lat:9.7700, lon:76.7300, date:"2026-01-08", route_id:"R1"},
+    // Different date — should be filtered out
+    {id:"S015", name:"Test Student",     boarding_point:"Palai",        lat:9.7450, lon:76.7550, date:"2026-01-09", route_id:"R1"},
+];
+
+// ── MOCK: original_routes.csv ─────────────────────────────────
+// Maps stop names → route IDs (reference routing table)
+// Embedded verbatim from original_routes.csv (constant, never changes)
+const ORIGINAL_ROUTES = [
+    {stop_name:"Cheenikuzhy",           route_id:"1",  lat:9.8926,  lon:76.8404},
+    {stop_name:"Karimannoor",           route_id:"1",  lat:9.9200,  lon:76.7800},
+    {stop_name:"Karimkunnam",           route_id:"1",  lat:9.9372,  lon:76.7450},
+    {stop_name:"Muthalakodam",          route_id:"1",  lat:9.9075,  lon:76.7303},
+    {stop_name:"Pravithanam",           route_id:"1",  lat:9.7500,  lon:76.7500},
+    {stop_name:"Thodupuzha Town",       route_id:"1",  lat:9.8973,  lon:76.7196},
+    {stop_name:"Udumpannoor",           route_id:"1",  lat:9.9060,  lon:76.8143},
+    {stop_name:"Anakkara",              route_id:"2",  lat:9.8560,  lon:76.9012},
+    {stop_name:"Erattupetta",           route_id:"2",  lat:9.6849,  lon:76.7772},
+    {stop_name:"Teekoy",                route_id:"2",  lat:9.6692,  lon:76.8235},
+    {stop_name:"Muttom",                route_id:"3",  lat:9.8724,  lon:76.7139},
+    {stop_name:"Thodupuzha",            route_id:"3",  lat:9.8970,  lon:76.7133},
+    {stop_name:"Vannappuram",           route_id:"3",  lat:9.9051,  lon:76.6794},
+    {stop_name:"Koothattukulam",        route_id:"4",  lat:9.8631,  lon:76.5832},
+    {stop_name:"Piravom",               route_id:"4",  lat:9.8687,  lon:76.4854},
+    {stop_name:"Mulanthuruthy",         route_id:"4",  lat:9.8776,  lon:76.4197},
+    {stop_name:"Perumbavoor",           route_id:"5",  lat:10.1107, lon:76.4732},
+    {stop_name:"Aluva",                 route_id:"5",  lat:10.1004, lon:76.3570},
+    {stop_name:"Kalamassery",           route_id:"5",  lat:10.0466, lon:76.3184},
+    {stop_name:"Muvattupuzha",          route_id:"6",  lat:9.9840,  lon:76.5738},
+    {stop_name:"Kothamangalam",         route_id:"6",  lat:10.0602, lon:76.6334},
+    {stop_name:"Neriamangalam",         route_id:"6",  lat:10.0356, lon:76.7415},
+    {stop_name:"Kanjirappally",         route_id:"7",  lat:9.5593,  lon:76.7887},
+    {stop_name:"Ponkunnam",             route_id:"7",  lat:9.5735,  lon:76.8249},
+    {stop_name:"Mundakayam",            route_id:"7",  lat:9.5458,  lon:76.8893},
+    {stop_name:"Changanassery",         route_id:"8",  lat:9.4420,  lon:76.5360},
+    {stop_name:"Kuravilangad",          route_id:"8",  lat:9.6045,  lon:76.5736},
+    {stop_name:"Vaikom",                route_id:"8",  lat:9.7481,  lon:76.3961},
+    {stop_name:"Ettumanoor",            route_id:"9",  lat:9.6686,  lon:76.5654},
+    {stop_name:"Kottayam Town",         route_id:"9",  lat:9.5916,  lon:76.5222},
+    {stop_name:"Kumarakom",             route_id:"9",  lat:9.6174,  lon:76.4297},
+    {stop_name:"Pala Market",           route_id:"10", lat:9.7098,  lon:76.6822},
+    {stop_name:"Meenachil",             route_id:"10", lat:9.7063,  lon:76.7081},
+    {stop_name:"Ramapuram",             route_id:"10", lat:9.7328,  lon:76.6905},
+    {stop_name:"Vazhakulam",            route_id:"11", lat:9.9516,  lon:76.6227},
+    {stop_name:"Kalloorkad",            route_id:"11", lat:9.9238,  lon:76.6562},
+    {stop_name:"Paingottoor",           route_id:"11", lat:9.9984,  lon:76.6627},
+    {stop_name:"Adimali",               route_id:"12", lat:10.0131, lon:76.9614},
+    {stop_name:"Mankulam",              route_id:"12", lat:10.0412, lon:76.9794},
+    {stop_name:"Thattekad",             route_id:"12", lat:10.1126, lon:76.7615},
+    {stop_name:"Thiruvalla",            route_id:"13", lat:9.3853,  lon:76.5746},
+    {stop_name:"Chengannur",            route_id:"13", lat:9.3150,  lon:76.6150},
+    {stop_name:"Haripad",               route_id:"13", lat:9.2636,  lon:76.4610},
+    {stop_name:"Adoor",                 route_id:"14", lat:9.1550,  lon:76.7310},
+    {stop_name:"Pathanamthitta",        route_id:"14", lat:9.2648,  lon:76.7870},
+    {stop_name:"Ranni",                 route_id:"14", lat:9.3830,  lon:76.8240},
+    {stop_name:"Kottarakkara",          route_id:"15", lat:9.0004,  lon:76.7740},
+    {stop_name:"Punalur",               route_id:"15", lat:9.0196,  lon:76.9226},
+    {stop_name:"Anchal",                route_id:"15", lat:8.9560,  lon:76.8180},
+    {stop_name:"Kayamkulam",            route_id:"16", lat:9.1810,  lon:76.5000},
+    {stop_name:"Mavelikkara",           route_id:"16", lat:9.2600,  lon:76.5560},
+    {stop_name:"Chengannur Jn",         route_id:"16", lat:9.3155,  lon:76.6155},
+    {stop_name:"Alappuzha",             route_id:"17", lat:9.4981,  lon:76.3388},
+    {stop_name:"Ambalappuzha",          route_id:"17", lat:9.3833,  lon:76.3875},
+    {stop_name:"Haripad Town",          route_id:"17", lat:9.2636,  lon:76.4610},
+    {stop_name:"Kundara",               route_id:"18", lat:8.9620,  lon:76.6560},
+    {stop_name:"Kollam Town",           route_id:"18", lat:8.8932,  lon:76.6141},
+    {stop_name:"Chavara",               route_id:"18", lat:8.9960,  lon:76.5340},
+    {stop_name:"Attingal",              route_id:"19", lat:8.6950,  lon:76.8150},
+    {stop_name:"Varkala",               route_id:"19", lat:8.7379,  lon:76.7163},
+    {stop_name:"Kazhakkoottam",         route_id:"19", lat:8.5710,  lon:76.8680},
+    {stop_name:"Neyyattinkara",         route_id:"20", lat:8.3980,  lon:77.0830},
+    {stop_name:"Balaramapuram",         route_id:"20", lat:8.4370,  lon:77.0350},
+    {stop_name:"Thiruvananthapuram",    route_id:"20", lat:8.5241,  lon:76.9366},
+    {stop_name:"Nedumangad",            route_id:"21", lat:8.6020,  lon:77.0000},
+    {stop_name:"Kattakada",             route_id:"21", lat:8.5220,  lon:77.0830},
+    {stop_name:"Vellanad",              route_id:"21", lat:8.5400,  lon:77.0670},
+    {stop_name:"Punalur Jn",            route_id:"22", lat:9.0198,  lon:76.9228},
+    {stop_name:"Pathanapuram",          route_id:"22", lat:9.0920,  lon:76.8700},
+    {stop_name:"Thenmala",              route_id:"22", lat:8.9640,  lon:77.0300},
+    {stop_name:"Paika",                 route_id:"23", lat:9.5833,  lon:76.7500},
+    {stop_name:"Poovarany",             route_id:"23", lat:9.6000,  lon:76.7500},
+    {stop_name:"Kottaramattom",         route_id:"23", lat:9.7000,  lon:76.7667},
+    {stop_name:"Govt. Hospital Jn",     route_id:"23", lat:9.7000,  lon:76.7500},
+    {stop_name:"Cheyhimattom Edappady", route_id:"23", lat:9.7167,  lon:76.7500},
+];
+// Keep MOCK_REFERENCE_ROUTES as alias so existing code that references it still works
+const MOCK_REFERENCE_ROUTES = ORIGINAL_ROUTES;
+
+// O(1) case-insensitive stop name lookup from original_routes.csv
+const STOP_COORDS_MAP = {};
+ORIGINAL_ROUTES.forEach(r => { STOP_COORDS_MAP[r.stop_name.toLowerCase().trim()] = {lat: r.lat, lon: r.lon}; });
+
+function lookupStopCoords(stopName) {
+    return STOP_COORDS_MAP[stopName.toLowerCase().trim()] || null;
+}
+
+// ── MOCK: accident_prediction_india.csv ───────────────────────
+// NOTE: This dataset was used ONLY in the TRAINING PHASE to build risk_model.pkl
+// It is NOT used at runtime/deployment — the trained model (risk_model.pkl) encodes
+// learned patterns. At runtime only indian_weather_data.csv is used.
+const MOCK_ACCIDENT_DATA = {
+    "thodupuzha":    2.1,
+    "palai":         1.6,
+    "muttom":        2.8,
+    "pala":          1.4,
+    "kidangoor":     1.9,
+    "erattupetta":   2.4,
+    "kanjirapally":  1.7,
+    "ettumanoor":    2.0,
+    "kottayam":      2.6,
+    "changanassery": 2.2,
+    "default":       2.0  // mean fallback
+};
+
+// ── MOCK: indian_weather_data.csv ─────────────────────────────
+// Maps approximate lat/lon zone → {precip (mm), visibility (0-10), road_condition}
+// road_condition: "dry"→2, "wet"→6, "under_construction"→8
+const MOCK_WEATHER_DATA = [
+    {lat:9.76, lon:76.74, precip:12.0, visibility:7.5, road_condition:"dry",              road_numeric:2},
+    {lat:9.74, lon:76.75, precip:15.5, visibility:6.8, road_condition:"wet",              road_numeric:6},
+    {lat:9.77, lon:76.73, precip:8.0,  visibility:8.2, road_condition:"dry",              road_numeric:2},
+    {lat:9.73, lon:76.76, precip:22.0, visibility:5.5, road_condition:"wet",              road_numeric:6},
+    {lat:9.75, lon:76.74, precip:10.0, visibility:7.0, road_condition:"dry",              road_numeric:2},
+    {lat:9.71, lon:76.69, precip:18.5, visibility:6.0, road_condition:"wet",              road_numeric:6},
+    {lat:9.68, lon:76.65, precip:25.0, visibility:4.5, road_condition:"wet",              road_numeric:6},
+    {lat:9.59, lon:76.52, precip:30.0, visibility:4.0, road_condition:"under_construction",road_numeric:8},
+    {lat:9.65, lon:76.68, precip:14.0, visibility:7.2, road_condition:"dry",              road_numeric:2},
+    {lat:9.44, lon:76.54, precip:35.0, visibility:3.5, road_condition:"wet",              road_numeric:6},
+];
+
+// ── DATASET ENGINE: filter students by ACTIVE_DATE ────────────
+function getStudentsForDate(date){
+    return MOCK_STUDENTS.filter(s => s.date === date);
+}
+
+// ── DATASET ENGINE: build created_routes (aggregated stops) ───
+// Mirrors Python generate_daily_routes()
+function buildCreatedRoutes(date){
+    const students = getStudentsForDate(date);
+    const stopMap  = {};
+    for(const s of students){
+        const ref = MOCK_REFERENCE_ROUTES.find(r => r.stop_name === s.boarding_point);
+        if(!ref) continue;
+        const key = ref.route_id + '|' + ref.stop_name;
+        if(!stopMap[key]){
+            stopMap[key] = {
+                route_id:  ref.route_id,
+                stop_name: ref.stop_name,
+                lat:       ref.lat,
+                lon:       ref.lon,
+                students:  0,
+                studentList: []
+            };
+        }
+        stopMap[key].students++;
+        stopMap[key].studentList.push({id:s.id, name:s.name, boarding_point:s.boarding_point});
+    }
+    return Object.values(stopMap);
+}
+
+// ── DATASET ENGINE: nearest weather lookup (Haversine-nearest) ─
+// Mirrors Python haversine-nearest-neighbor weather lookup
+function getNearestWeather(lat, lon){
+    let best = null, bestDist = Infinity;
+    for(const w of MOCK_WEATHER_DATA){
+        const d = haversine(lat, lon, w.lat, w.lon);
+        if(d < bestDist){ bestDist = d; best = w; }
+    }
+    return best || MOCK_WEATHER_DATA[0];
+}
+
+// ── DATASET ENGINE: accident risk lookup ─────────────────────
+function getAccidentRisk(stopName){
+    const key = (stopName||'').toLowerCase().trim();
+    return MOCK_ACCIDENT_DATA[key] || MOCK_ACCIDENT_DATA['default'];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AHP + ML RISK ENGINE — aligned with Python backend (risk_model.pkl)
+// ═══════════════════════════════════════════════════════════════
+
+// Config constants (mirrors Python exactly)
+const AHP_PRI  = [0.7, 0.2, 0.1];   // students, inv-distance, cluster
+const AHP_ROU  = [0.4, 0.6];         // distance weight, AHP-score weight
+const RISK_W   = 0.2;
+const COLLEGE  = {lat:9.7268, lng:76.7260, name:'College'};
+const EPS      = 1e-6;
+const BUS_CAPACITY_DEFAULT = 60;
+const AVERAGE_SPEED_KPH    = 30.0;
+
+// ── ML RISK ENGINE — real Flask API (risk_model.pkl) ──────────
+// computeStopRisk() is now ASYNC.
+// It calls POST /api/risk → Flask loads risk_model.pkl and
+// indian_weather_data.csv, runs predict_proba(), returns risk_prob.
+//
+// calculateAHPScores() and optimizeRoutes() are also async so they
+// can await the API call before doing any routing math.
+
+async function fetchRiskScores(stops) {
+    /**
+     * POST /api/risk
+     * Sends all stops in one batch request.
+     * Returns a map of "lat,lon" → risk_prob for O(1) lookup.
+     */
+    const payload = stops.map(s => ({ lat: s.lat, lon: s.lng || s.lon }));
+    const resp = await fetch("/api/risk", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ stops: payload })
+    });
+    if (!resp.ok) throw new Error(`/api/risk returned ${resp.status}`);
+    const data = await resp.json();
+
+    // Build lookup map keyed by "lat,lon" — stores both prob and breakdown
+    const map = {};
+    for (const s of data.stops) {
+        map[`${s.lat},${s.lon}`] = {
+            risk_prob: s.risk_prob,
+            breakdown: s.breakdown || null
+        };
+    }
+    return map;
+}
+
+function computeStopRisk(stop, riskMap) {
+    const key = `${stop.lat},${stop.lng || stop.lon}`;
+    if (riskMap && riskMap[key] !== undefined) {
+        const entry = riskMap[key];
+        // riskMap values are now {risk_prob, breakdown} objects
+        if (typeof entry === 'object' && entry !== null && 'risk_prob' in entry) {
+            return entry;
+        }
+        // Legacy plain number fallback
+        return { risk_prob: entry, breakdown: null };
+    }
+    return { risk_prob: 0.35, breakdown: null };
+}
+
+// ── AHP ENGINE: calculate_ahp_scores (mirrors Python) ─────────
+// AHP_score = w_students×(students/max_students) + w_dist×(1/dist) + w_cluster×1
+// riskMap is pre-fetched from Flask /api/risk before this is called.
+function calculateAHPScores(stops, riskMap){
+    const maxStudents = Math.max(...stops.map(s => s.students||1), 1);
+    return stops.map(s => {
+        const dist     = haversine(s.lat, s.lng || s.lon, COLLEGE.lat, COLLEGE.lng);
+        const ahpScore = (
+            AHP_PRI[0] * ((s.students||1) / maxStudents) +
+            AHP_PRI[1] * (1 / Math.max(dist, EPS)) +
+            AHP_PRI[2]
+        );
+        // Real ML risk probability from Flask API (with breakdown)
+        const riskEntry = computeStopRisk(s, riskMap);
+        const riskScore = riskEntry.risk_prob;
+        const riskBreak = riskEntry.breakdown;
+        const weather   = getNearestWeather(s.lat, s.lng || s.lon);
+        return {
+            ...s,
+            ahpScore,
+            riskScore,
+            riskBreakdown: riskBreak,   // {rainfall_mm, visibility, weather, road, lighting, raw_prob}
+            _weather: weather,
+        };
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTING ENGINE — strict capacity-constrained greedy
+// Mirrors Python get_optimized_route exactly
+// ═══════════════════════════════════════════════════════════════
+
+// cost = (distance_weight × distance) − (ahp_weight × ahp_score) + (risk_weight × risk_score)
+function greedyCapacityRoutes(scoredStops, cap){
+    const routes   = [];
+    let unvisited  = [...scoredStops];
+
+    while(unvisited.length){
+        const route = [];
+        let load    = 0;
+        let current = {lat: COLLEGE.lat, lng: COLLEGE.lng};
+        let progress = true;
+
+        while(progress && unvisited.length){
+            progress    = false;
+            let best    = null;
+            let bestCost = Infinity;
+
+            for(const s of unvisited){
+                const studentCount = s.students || 1;
+                // STRICT capacity enforcement — skip if exceeds BUS_CAPACITY
+                if(load + studentCount > cap) continue;
+
+                const d = haversine(current.lat, current.lng, s.lat, s.lng || s.lon);
+
+                // Routing cost function (mirrors Python backend exactly):
+                // adaptive_risk_weight = RISK_W * (1 + risk_score)
+                // cost = AHP_ROUTING[0]*dist - AHP_ROUTING[1]*ahp_score + adaptive_risk_weight
+                const adaptive_risk_weight = RISK_W * (1 + s.riskScore);
+                const cost = AHP_ROU[0]*d - AHP_ROU[1]*s.ahpScore + adaptive_risk_weight;
+
+                if(cost < bestCost){ bestCost = cost; best = s; }
+            }
+
+            if(best){
+                route.push(best);
+                load    += best.students || 1;
+                current  = {lat: best.lat, lng: best.lng || best.lon};
+                unvisited = unvisited.filter(s => s !== best);
+                progress  = true;
+            }
+        }
+
+        if(route.length) routes.push({ stops: route, load });
+
+        // Safety valve: if remaining stops exceed capacity individually, force a new bus
+        if(!progress && unvisited.length){
+            // Start fresh bus for remaining stops
+            continue;
+        }
+    }
+    return routes;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METRICS ENGINE
+// Mirrors Python calculate_route_metrics
+// time_minutes = (road_distance / average_speed) × 60
+// ═══════════════════════════════════════════════════════════════
+function calculateRouteMetrics(stopsSeq, spd){
+    let totalDist = 0;
+    for(let j = 0; j < stopsSeq.length - 1; j++){
+        totalDist += haversine(stopsSeq[j].lat, stopsSeq[j].lng,
+                                stopsSeq[j+1].lat, stopsSeq[j+1].lng);
+    }
+    // Return leg: last stop → college
+    totalDist += haversine(
+        stopsSeq[stopsSeq.length-1].lat, stopsSeq[stopsSeq.length-1].lng,
+        COLLEGE.lat, COLLEGE.lng
+    );
+    const timeMins = (totalDist / spd) * 60; // Python formula
+    return { totalDist, timeMins };
+}
+
+// ── ETA confidence based on risk (mirrors Python output note) ──
+function etaRiskConfidence(avgRisk){
+    // High risk → lower confidence in ETA
+    const conf = Math.max(50, Math.round((1 - avgRisk) * 100));
+    const margin = (avgRisk * 5).toFixed(1); // up to ±5 min
+    return { conf, margin };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN ENTRY: optimizeRoutes (async)
+// 1. Aggregates students into stops
+// 2. Calls POST /api/risk → gets real ML probabilities from Flask
+// 3. Runs AHP scoring + greedy routing entirely in JS
+// ═══════════════════════════════════════════════════════════════
+async function optimizeRoutes(students, cap, spd, _dateLabel){
+    // ── Aggregate students by stop ────────────────────────────
+    const stopMap = {};
+    for(const s of students){
+        const lon = s.lng || s.lon;
+        const key = `${s.lat.toFixed(5)},${parseFloat(lon).toFixed(5)}`;
+        if(!stopMap[key]){
+            stopMap[key] = {
+                lat:      s.lat,
+                lng:      lon,
+                stopName: s.stopName || s.boarding_point || `${s.lat.toFixed(3)},${parseFloat(lon).toFixed(3)}`,
+                name:     s.stopName || s.name || s.boarding_point || 'Stop',
+                students: 0,
+                studentList: s.studentList || []
+            };
+        }
+        stopMap[key].students += 1;
+        if(s.id) stopMap[key].studentList.push({id:s.id, name:s.name||'', boarding_point:s.stopName||''});
+    }
+    const rawStops = Object.values(stopMap);
+
+    // ── Fetch real ML risk scores from Flask ──────────────────
+    // POST /api/risk → risk_model.pkl + indian_weather_data.csv
+    const riskMap = await fetchRiskScores(rawStops);
+
+    // ── AHP scoring using real risk probs ─────────────────────
+    const scoredStops = calculateAHPScores(rawStops, riskMap);
+
+    // ── Greedy routing with adaptive ML risk weight ───────────
+    const busRoutes = greedyCapacityRoutes(scoredStops, cap);
+
+    const COLORS = ['#e63946','#06ffa5','#4361ee','#f77f00','#9d4edd','#2a9d8f','#e9c46a','#264653'];
+
+    const routes = busRoutes.map((busRoute, i) => {
+        const route = busRoute.stops;
+
+        const stopsSeq = [{lat: COLLEGE.lat, lng: COLLEGE.lng, name:'College', stopName:'College'}];
+        let rem = [...route], cur = COLLEGE;
+        while(rem.length){
+            let ni = 0, md = Infinity;
+            rem.forEach((s, j) => {
+                const d = haversine(cur.lat, cur.lng, s.lat, s.lng || s.lon);
+                if(d < md){ md = d; ni = j; }
+            });
+            stopsSeq.push(rem[ni]);
+            cur = rem[ni];
+            rem.splice(ni, 1);
+        }
+
+        const { totalDist, timeMins } = calculateRouteMetrics(stopsSeq, spd);
+        const studentsCount = route.reduce((a, s) => a + (s.students||1), 0);
+        const loadPct       = Math.round((studentsCount / cap) * 100);
+        const avgRisk = (route.reduce((a, s) => a + s.riskScore, 0) / Math.max(route.length, 1));
+        const avgAHP  = (route.reduce((a, s) => a + s.ahpScore,  0) / Math.max(route.length, 1));
+        const { conf: etaConf, margin: etaMargin } = etaRiskConfidence(avgRisk);
+        const stopSequence = ['College', ...route.map(s => s.stopName || s.name), 'College'].join(' → ');
+
+        return {
+            id:            `Route ${i+1}`,
+            stops:          stopsSeq,
+            totalDistance:  totalDist.toFixed(2),
+            estimatedTime:  Math.round(timeMins),
+            studentsCount,
+            capacity:       cap,
+            loadPct,
+            color:          COLORS[i % COLORS.length],
+            avgRisk:        avgRisk.toFixed(4),
+            avgAHP:         avgAHP.toFixed(4),
+            etaConf,
+            etaMargin,
+            riskBreakdown:  route.reduce((best, s) =>
+                (!best || (s.riskScore > (best._score||0)))
+                    ? {...(s.riskBreakdown||{}), _score: s.riskScore}
+                    : best, null),
+            stopSequence
+        };
+    });
+
+    return { routes, college: COLLEGE, activeDate: _dateLabel || ACTIVE_DATE };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT ENGINE — route student files (mirrors Python export_route_student_files)
+// Generates per-route CSV strings as browser downloads (no server needed)
+// ═══════════════════════════════════════════════════════════════
+function exportPerRouteStudentFiles(){
+    if(!routeResults){ alert('Run optimization first.'); return; }
+    const createdRoutes = buildCreatedRoutes(ACTIVE_DATE);
+
+    routeResults.routes.forEach((route, i) => {
+        // Gather students for each stop on this route
+        const routeStopNames = route.stops.slice(1).map(s => (s.stopName||s.name||'').toLowerCase().trim());
+        const routeStudents = MOCK_STUDENTS.filter(s =>
+            s.date === ACTIVE_DATE &&
+            routeStopNames.includes((s.boarding_point||'').toLowerCase().trim())
+        );
+
+        let csv = 'Student_Name,Roll_No,Boarding_Point\n';
+        routeStudents.forEach(s => {
+            csv += `"${s.name}","${s.id}","${s.boarding_point}"\n`;
+        });
+        dlFile(csv, `Route_${i+1}_Students.csv`, 'text/csv');
+    });
+}
+
+// Export full summary JSON (mirrors Python created_routes.csv output)
+function exportCreatedRoutesJSON(){
+    if(!routeResults){ alert('Run optimization first.'); return; }
+    const createdRoutes = buildCreatedRoutes(ACTIVE_DATE);
+    const payload = {
+        active_date: ACTIVE_DATE,
+        generated_at: new Date().toISOString(),
+        model_weights: {
+            ahp_priority: { students: AHP_PRI[0], distance: AHP_PRI[1], cluster: AHP_PRI[2] },
+            ahp_routing:  { distance: AHP_ROU[0], ahp_score: AHP_ROU[1] },
+            risk_penalty: RISK_W
+        },
+        routes: routeResults.routes.map(r => ({
+            route_id: r.id,
+            total_distance_km: r.totalDistance,
+            estimated_time_min: r.estimatedTime,
+            students_count: r.studentsCount,
+            capacity: r.capacity,
+            load_pct: r.loadPct,
+            avg_risk: r.avgRisk,
+            avg_ahp: r.avgAHP,
+            eta_confidence_pct: r.etaConf,
+            eta_margin_min: r.etaMargin,
+            stop_sequence: r.stopSequence,
+            stops: r.stops.map(s => ({
+                name: s.stopName || s.name,
+                lat:  s.lat,
+                lon:  s.lng || s.lon,
+                students: s.students,
+                risk_score: s.riskScore != null ? +s.riskScore.toFixed(3) : null,
+                ahp_score:  s.ahpScore  != null ? +s.ahpScore.toFixed(4)  : null
+            }))
+        })),
+        created_routes_summary: createdRoutes
+    };
+    dlFile(JSON.stringify(payload, null, 2), 'created_routes.json', 'application/json');
+}
+
+function displayResults(){
+    if(!routeResults) return;
+    const list = document.getElementById('route-list');
+    list.innerHTML = '';
+
+    // Summary header showing ACTIVE_DATE
+    const dateBar = document.createElement('div');
+    dateBar.style.cssText = 'background:linear-gradient(135deg,#e8f7ef,#fff);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.82rem;color:var(--primary)';
+    dateBar.innerHTML = `📅 <b>Routes for ${routeResults.activeDate || ACTIVE_DATE}</b> — ${routeResults.routes.length} bus(es) | ${routeResults.routes.reduce((a,r)=>a+r.studentsCount,0)} students`;
+    list.appendChild(dateBar);
+
+    routeResults.routes.forEach((r, i) => {
+        const card = document.createElement('div');
+        card.className = 'route-card';
+        card.onclick   = () => selectRoute(i);
+        const loadColor = r.loadPct > 90 ? '#e63946' : r.loadPct > 75 ? '#f77f00' : '#2a9d8f';
+        card.innerHTML = `
+            <div class="route-header">
+                <span class="route-id" style="color:${r.color}">${r.id}</span>
+                ${riskBadgeHTML(r.avgRisk, r.riskBreakdown)}
+            </div>
+            <div class="route-stats">
+                <span>📏 ${r.totalDistance} km</span>
+                <span>⏱️ ${r.estimatedTime} min</span>
+                <span>👥 ${r.studentsCount}/${r.capacity}</span>
+                <span title="AHP Priority Score">⚖️ ${r.avgAHP}</span>
+            </div>
+            <div style="margin-top:6px">
+                <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px">
+                    <span style="color:${loadColor}">Load ${r.loadPct}%</span>
+                    <span style="color:var(--text-light)">ETA ±${r.etaMargin}m (${r.etaConf}%)</span>
+                </div>
+                <div style="height:4px;border-radius:2px;background:#eee;overflow:hidden">
+                    <div style="height:100%;width:${r.loadPct}%;background:${loadColor};border-radius:2px;transition:width .5s"></div>
+                </div>
+            </div>`;
+        list.appendChild(card);
+    });
+    updateLeafletMap();
+}
+function riskColor(r){
+    const pct = parseFloat(r) * 100;
+    if (pct <= 40) return '#2a9d8f';    // green  — 25–40%
+    if (pct <= 70) return '#f59e0b';    // yellow — 41–70%
+    return '#e63946';                   // red    — >70%
+}
+function riskTooltipText(r){
+    const pct = Math.round(parseFloat(r) * 100);
+    if (pct <= 40) return `${pct}% — Low risk. Conditions are favourable for safe travel on this route.`;
+    if (pct <= 70) return `${pct}% — Moderate risk. Some adverse weather or road conditions detected.`;
+    return `${pct}% — High risk. Significant hazards detected. Extra caution advised.`;
+}
+function riskBadgeHTML(r, breakdown){
+    const pct = Math.round(parseFloat(r) * 100);
+    const col = riskColor(r);
+
+    let tip;
+    if (breakdown) {
+        const wIcon  = breakdown.weather  === 'rainy'  ? '🌧️' : breakdown.weather === 'cloudy' ? '⛅' : '☀️';
+        const rIcon  = breakdown.road     === 'wet'    ? '💧' : '🛣️';
+        const lIcon  = breakdown.lighting === 'night'  ? '🌙' : '☀️';
+        const label  = pct <= 40 ? 'Low risk' : pct <= 70 ? 'Moderate risk' : 'High risk';
+        tip = `<strong>${label} — ${pct}%</strong><br>`
+            + `${wIcon} Weather: ${breakdown.weather} (${breakdown.rainfall_mm}mm rain)<br>`
+            + `${rIcon} Road: ${breakdown.road}<br>`
+            + `${lIcon} Lighting: ${breakdown.lighting} (vis. ${breakdown.visibility}km)<br>`
+            + `<span style="opacity:0.65;font-size:0.68rem">Model raw score: ${Math.round(breakdown.raw_prob*100)}% → calibrated to ${pct}%</span>`;
+    } else {
+        tip = riskTooltipText(r);
+    }
+
+    return `<span class="risk-badge" style="background:${col}">Risk ${pct}%<span class="risk-tip">${tip}</span></span>`;
+}
+let selRoute=null;
+function selectRoute(i){
+    selRoute=i;
+    document.querySelectorAll('.route-card').forEach((c,j)=>c.classList.toggle('active',i===j));
+    displayRouteDetails(routeResults.routes[i]);
+    updateLeafletMap(i);
+}
+function displayRouteDetails(route){
+    const loadColor = route.loadPct > 90 ? '#e63946' : route.loadPct > 75 ? '#f77f00' : '#2a9d8f';
+    document.getElementById('route-details-container').innerHTML=`
+    <div class="route-details">
+      <h4 style="color:${route.color};margin-bottom:6px">${route.id} — Pickup Sequence</h4>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px;font-size:0.8rem">
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--primary);font-size:1.1rem">${route.studentsCount}/${route.capacity}</div>
+              <div style="color:var(--text-light)">Students / Capacity</div>
+              <div style="height:4px;border-radius:2px;background:#eee;margin-top:4px;overflow:hidden">
+                  <div style="height:100%;width:${route.loadPct}%;background:${loadColor};border-radius:2px"></div>
+              </div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--primary);font-size:1.1rem">${route.totalDistance} km</div>
+              <div style="color:var(--text-light)">Total Distance</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--primary);font-size:1.1rem">${route.estimatedTime} min</div>
+              <div style="color:var(--text-light)">Est. Time (road/speed)</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:${riskColor(route.avgRisk)};font-size:1.1rem">${route.etaConf}% ±${route.etaMargin}m</div>
+              <div style="color:var(--text-light)">ETA Confidence</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div>${riskBadgeHTML(route.avgRisk, route.riskBreakdown)}</div>
+              <div style="color:var(--text-light);font-size:0.78rem;margin-top:4px">Route Risk Score</div>
+          </div>
+          <div style="background:#f8f9fa;border-radius:6px;padding:8px;text-align:center">
+              <div style="font-weight:700;color:var(--primary);font-size:1.1rem">${route.avgAHP}</div>
+              <div style="color:var(--text-light)">Avg AHP Score</div>
+          </div>
+      </div>
+      <div style="background:#e8f7ef;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:0.8rem;color:var(--primary)">
+          <b>Stop Sequence:</b> ${route.stopSequence || route.stops.map(s=>s.stopName||s.name).join(' → ')}
+      </div>
+      <ul class="pickup-list">
+        ${route.stops.map((s,i)=>`
+          <li class="pickup-item">
+            <div style="display:flex;align-items:center;gap:12px;width:100%">
+              <span class="pickup-number">${i+1}</span>
+              <div style="flex:1">
+                <strong>${s.name||s.stopName||'College'}</strong>
+                ${i>0&&s.stopName?`<div style="font-size:.82rem;color:var(--text-light)">${s.stopName}</div>`:''}
+                ${i>0&&s._weather?`<div style="font-size:.75rem;color:var(--text-light)">🌧️ ${s._weather.precip}mm &nbsp; 👁️ vis ${s._weather.visibility} &nbsp; 🛣️ ${s._weather.road_condition}</div>`:''}
+              </div>
+              ${i>0&&s.riskScore!==undefined?`<div style="text-align:right;font-size:0.75rem">
+                ${riskBadgeHTML(s.riskScore, s.riskBreakdown)}<br>
+                <span style="color:var(--text-light)">AHP ${s.ahpScore?s.ahpScore.toFixed(3):'-'}</span>
+                ${s._weatherEnc?`<br><span style="color:var(--text-light)" title="weather/road/light encoding used by ML model">[${s._weatherEnc.weather_cat||'—'}/${s._weatherEnc.road_cat||'—'}/${s._weatherEnc.lighting||'—'}]</span>`:''}
+              </div>`:''}
+              ${i>0&&s.students?`<div style="text-align:right;margin-left:8px;font-size:0.75rem;background:#e8f7ef;border-radius:4px;padding:2px 7px;color:var(--primary);font-weight:600">👥 ${s.students}</div>`:''}
+            </div>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+// ── Leaflet map ────────────────────────────────────────────────
+function initLeafletMap(){
+    if(leafletMap) return;
+    leafletMap = L.map('map').setView([9.75,76.75],12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(leafletMap);
+}
+function updateLeafletMap(hi=null){
+    if(!leafletMap||!routeResults) return;
+    mapLayers.forEach(l=>leafletMap.removeLayer(l)); mapLayers=[];
+    const cm=L.marker([routeResults.college.lat,routeResults.college.lng],{icon:L.divIcon({className:'',html:'<div style="background:#1a4d2e;color:white;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏫</div>',iconSize:[30,30]})}).addTo(leafletMap);
+    cm.bindPopup('<strong>College</strong>'); mapLayers.push(cm);
+    routeResults.routes.forEach((route,idx)=>{
+        const op=hi===null||hi===idx?1:0.25, w=hi===idx?5:3;
+        const poly=L.polyline(route.stops.map(s=>[s.lat,s.lng||s.lng]),{color:route.color,weight:w,opacity:op}).addTo(leafletMap);
+        mapLayers.push(poly);
+        route.stops.slice(1).forEach((s,si)=>{
+            const m=L.circleMarker([s.lat,s.lng||s.lng],{radius:7,fillColor:route.color,color:'white',weight:2,opacity:op,fillOpacity:op}).addTo(leafletMap);
+            m.bindPopup(`<strong>${s.stopName||s.name}</strong><br>Route: ${route.id}<br>Stop #${si+1}`);
+            mapLayers.push(m);
+        });
+    });
+    const pts=[]; routeResults.routes.forEach(r=>r.stops.forEach(s=>pts.push([s.lat,s.lng||s.lng])));
+    if(pts.length) leafletMap.fitBounds(pts);
+}
+
+// ── Export per-route student CSVs ────────────────────────────
+// For each route, generates a CSV with Student ID, Name, Stop Name, Lat, Lon.
+// Student ID and Name are pulled from allStudentRows (the uploaded CSV data).
+// Falls back to stop-level data if individual student info isn't available.
+function exportStudentCSVs() {
+    if (!routeResults) { alert('Run optimization first.'); return; }
+
+    // Build a fast lookup: stopName (lowercase) → [ {id, name} ] from uploaded CSV
+    const stopStudentMap = {};
+    for (const row of allStudentRows) {
+        const key = (row.stop || '').toLowerCase().trim();
+        if (!key) continue;
+        if (!stopStudentMap[key]) stopStudentMap[key] = [];
+        stopStudentMap[key].push({ id: row.id || '', name: row.name || '' });
+    }
+
+    routeResults.routes.forEach((route, ri) => {
+        const lines = ['Route,Student ID,Name,Stop Name,Latitude,Longitude'];
+        const routeId = route.id || `Route ${ri + 1}`;
+
+        // Collect all stops (skip College which is index 0)
+        const stops = route.stops.slice(1).filter(s => s.name !== 'College');
+
+        // For each stop, emit one row per student assigned to it
+        const usedStudents = new Set();
+        stops.forEach(stop => {
+            const stopKey = (stop.stopName || stop.name || '').toLowerCase().trim();
+            const students = stopStudentMap[stopKey] || [];
+
+            if (students.length) {
+                students.forEach(stu => {
+                    const dedupKey = stu.id + '|' + stopKey;
+                    if (usedStudents.has(dedupKey)) return;
+                    usedStudents.add(dedupKey);
+                    lines.push(`"${routeId}","${stu.id}","${stu.name}","${stop.stopName || stop.name}",${stop.lat || ''},${stop.lng || stop.lon || ''}`);
+                });
+            } else {
+                // No individual student data for this stop — emit stop-level row
+                lines.push(`"${routeId}","—","—","${stop.stopName || stop.name}",${stop.lat || ''},${stop.lng || stop.lon || ''}`);
+            }
+        });
+
+        dlFile(lines.join('\n'), `${routeId.replace(/\s+/g,'_')}_students.csv`, 'text/csv');
+    });
+}
+
+// ── Export summary CSV (route-level stats, original behaviour) ──
+function exportSummaryCSV() {
+    if (!routeResults) { alert('Run optimization first.'); return; }
+    let csv = 'Route ID,Distance (km),Time (min),Students,Capacity,Load %,Avg Risk (%),Avg AHP,ETA Conf %,ETA Margin (min),Stop Sequence\n';
+    routeResults.routes.forEach(r => {
+        const riskPct = (parseFloat(r.avgRisk) * 100).toFixed(1);
+        csv += `"${r.id}",${r.totalDistance},${r.estimatedTime},${r.studentsCount},${r.capacity},${r.loadPct},${riskPct},${r.avgAHP},${r.etaConf},${r.etaMargin},"${r.stopSequence}"\n`;
+    });
+    dlFile(csv, `route_summary_${ACTIVE_DATE}.csv`, 'text/csv');
+}
+
+function exportMap(){ alert('In production this exports an interactive HTML map.'); }
+function exportSummary(){ exportSummaryCSV(); }
+function dlFile(content,name,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name; a.click(); }
+function uploadCSV(){ const i=document.createElement('input'); i.type='file'; i.accept='.csv'; i.onchange=e=>{ const r=new FileReader(); r.onload=ev=>parseCSV(ev.target.result); r.readAsText(e.target.files[0]); }; i.click(); }
+function parseCSVLine(line){
+    const result=[]; let cur='', inQ=false;
+    for(const c of line){
+        if(c==='"'){ inQ=!inQ; }
+        else if(c===','&&!inQ){ result.push(cur.trim()); cur=''; }
+        else cur+=c;
+    }
+    result.push(cur.trim());
+    return result;
+}
+function parseCSV(csv){
+    const lines = csv.split('\n').map(l => l.trim()).filter(l => l);
+    if (!lines.length) { alert('Empty file'); return; }
+
+    // New file uploaded — invalidate all optimization caches
+    clearOptCache();
+
+    // ── Detect header and map columns ────────────────────────────
+    // Uses EXACT keyword matching on each header cell (not substring of whole row)
+    // so "Stop Name" never gets confused with "Name".
+    // Supported formats (auto-detected, any column order):
+    //   A: Student ID, Name, Stop Name                       ← your standard upload
+    //   B: Student ID, Name, Stop Name, Latitude, Longitude  ← with coords
+    //   C: Student ID, Name, Latitude, Longitude, Stop Name  ← legacy order
+    const firstCells = parseCSVLine(lines[0]).map(c => c.toLowerCase().trim());
+    const looksLikeHeader = firstCells.some(c =>
+        c === 'student id' || c === 'id' || c === 'name' || c === 'stop name' ||
+        c === 'stop' || c === 'latitude' || c === 'lat' || c === 'longitude' || c === 'lon'
+    );
+    const startIdx = looksLikeHeader ? 1 : 0;
+
+    // Default: Format A positional (col 0=id, 1=name, 2=stop, no lat/lon)
+    let colId=0, colName=1, colEmail=-1, colStop=2, colLat=-1, colLon=-1;
+
+    if (looksLikeHeader) {
+        // Reset all to -1, detect from header cells individually
+        colId=-1; colName=-1; colStop=-1; colLat=-1; colLon=-1;
+        firstCells.forEach((c, i) => {
+            // Match whole cell or known substrings — ordered most→least specific
+            if      (c === 'student id' || c === 'id' || c.endsWith(' id'))  colId    = i;
+            else if (c === 'stop name'  || c === 'stop' || c.includes('board')) colStop = i;
+            else if (c === 'email'      || c.includes('email') || c.includes('mail')) colEmail = i;
+            else if (c === 'name'       || c.endsWith(' name'))               colName  = i;
+            else if (c === 'latitude'   || c === 'lat')                       colLat   = i;
+            else if (c === 'longitude'  || c === 'lon' || c === 'lng')        colLon   = i;
+        });
+        // Safety fallbacks for unlabelled positional CSVs
+        if (colId   < 0) colId   = 0;
+        if (colName < 0) colName = 1;
+        if (colStop < 0 && colLat < 0) colStop = 2;  // 3-col format: id,name,stop
+    }
+
+    const newRows = [];
+    let matched = 0, skipped = 0;
+
+    for (let i = startIdx; i < lines.length; i++) {
+        const v = parseCSVLine(lines[i]);
+        if (v.length < 2) continue;
+
+        const clean  = idx => idx >= 0 && v[idx] ? v[idx].replace(/"/g,'').trim() : '';
+        const sid      = clean(colId);
+        const name     = clean(colName);
+        const email    = clean(colEmail);
+        const stopName = clean(colStop);
+
+        if (!sid || !name) { skipped++; continue; }
+
+        // 1. Try coords from CSV columns (format B/C)
+        let lat = null, lon = null;
+        if (colLat >= 0 && colLon >= 0) {
+            const lv = parseFloat(v[colLat]), lnv = parseFloat(v[colLon]);
+            if (!isNaN(lv) && !isNaN(lnv) && lv>=-90 && lv<=90 && lnv>=-180 && lnv<=180) {
+                lat = lv; lon = lnv;
+            }
+        }
+
+        // 2. If no coords from CSV, look up stop name in original_routes.csv (instant)
+        if ((lat === null) && stopName) {
+            const found = lookupStopCoords(stopName);
+            if (found) { lat = found.lat; lon = found.lon; matched++; }
+        }
+        // Any remaining nulls → Nominatim fallback handled at optimization time
+
+        newRows.push({ id: sid, name, email, stop: stopName, lat, lon });
+    }
+
+    const si = document.getElementById('status-indicator');
+    if (!newRows.length) {
+        alert('No valid rows found.\n\nExpected format:\nStudent ID, Name, Email, Stop Name\n\nCoordinates are filled automatically from original_routes.csv');
+        return;
+    }
+
+    allStudentRows = newRows;
+    currentPage = 0;
+    renderPage();
+
+    const noCoords = newRows.filter(r => r.lat === null).length;
+    si.className = 'status-indicator status-completed';
+    si.textContent = `✅ ${newRows.length} students loaded` +
+        (matched   ? ` — ${matched} coords filled from original_routes.csv` : '') +
+        (noCoords  ? ` — ${noCoords} stop(s) will geocode on optimization`  : '') +
+        (skipped   ? ` — ${skipped} rows skipped` : '');
+}
+function downloadTemplate(){ dlFile('Student ID,Name,Email,Stop Name\n21CS001,Akhil Raj,akhil@example.com,Pala Market\n21CS002,Neha Thomas,neha@example.com,Meenachil\n21CS003,Jijo Kurian,jijo@example.com,Ettumanoor','template.csv','text/csv'); }
+
+// ═══════════════════════════════════════════════════════════════
+// ══════  LIVE TRACKING — Demo: Single Phone Driver  ════════════
+// ═══════════════════════════════════════════════════════════════
+
+const COLLEGE_PT = {lat: 9.7268, lon: 76.7260};
+
+// ── State ──────────────────────────────────────────────────────
+let aiLiveMap        = null;
+let aiTrackerInited  = false;
+let _clockTimer      = null;
+let _pollTimer       = null;
+let _alertCount      = 0;
+
+// Multi-bus state (admin sees all, student sees one)
+// _busState[bus_id] = { lat, lon, speed, accuracy, lastSeen, distKm, etaMin,
+//                       trail[], active, marker, trailLine, distLine,
+//                       routeLine (planned route polyline), deviated (bool) }
+let _busState = {};
+
+// ── Planned-route overlay helpers ─────────────────────────────
+const DEVIATION_THRESHOLD_M = 300;   // metres — flag bus as deviated beyond this
+
+// Point-to-segment distance (metres) using flat-earth approx — fast, accurate enough at <5 km
+function _ptSegDist(plat, plon, alat, alon, blat, blon) {
+    const R = 6371000;
+    const toLat = d => d * Math.PI / 180;
+    const dx = (blon - alon) * Math.cos(toLat((alat + blat) / 2)) * R * Math.PI / 180;
+    const dy = (blat - alat) * R * Math.PI / 180;
+    const px = (plon - alon) * Math.cos(toLat((alat + plat) / 2)) * R * Math.PI / 180;
+    const py = (plat - alat) * R * Math.PI / 180;
+    const len2 = dx * dx + dy * dy;
+    let t = len2 > 0 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
+    const ex = px - t * dx, ey = py - t * dy;
+    return Math.sqrt(ex * ex + ey * ey);
+}
+
+// Minimum distance (m) from point to a polyline (array of {lat,lng})
+function _distToRoute(lat, lon, pts) {
+    if (!pts || pts.length < 2) return Infinity;
+    let minD = Infinity;
+    for (let i = 0; i < pts.length - 1; i++) {
+        const d = _ptSegDist(lat, lon, pts[i].lat, pts[i].lng, pts[i+1].lat, pts[i+1].lng);
+        if (d < minD) minD = d;
+    }
+    return minD;
+}
+
+// Draw (or update) the planned route line for a bus on the map
+function _drawRouteLine(busId, state, colorIdx) {
+    const ROLE  = document.querySelector('meta[name="user-role"]')?.content || 'admin';
+    const myBus = document.querySelector('meta[name="user-bus"]')?.content  || '';
+    if (ROLE === 'student' && myBus && busId !== myBus) return;
+
+    const pts = (window._publishedRoutes || {})[busId];
+    if (!pts || pts.length < 2 || !aiLiveMap) return;
+    const col     = state.deviated ? '#ff1744' : _busColor(colorIdx);
+    const latlngs = pts.map(p => [p.lat, p.lng]);
+
+    // Route polyline
+    if (!state.routeLine) {
+        state.routeLine = L.polyline(latlngs, {
+            color: col, weight: 3, opacity: 0.55, dashArray: '6,5'
+        }).addTo(aiLiveMap);
+    } else {
+        state.routeLine.setLatLngs(latlngs);
+        state.routeLine.setStyle({ color: col });
+    }
+
+    // Stop pins — created once, colour updated on deviation changes
+    if (!state.stopMarkers) state.stopMarkers = [];
+
+    if (state.stopMarkers.length === 0) {
+        pts.forEach((p, i) => {
+            if (i === 0) return;   // skip college — has its own pin already
+            const m = L.circleMarker([p.lat, p.lng], {
+                radius: 5, color: col, fillColor: col,
+                fillOpacity: 0.85, weight: 1.5, opacity: 0.9
+            }).addTo(aiLiveMap);
+            m.bindTooltip(p.name || ('Stop ' + i), {
+                permanent: false, direction: 'top', className: 'stop-pin-tip'
+            });
+            state.stopMarkers.push(m);
+        });
+    } else {
+        // Update colour only
+        state.stopMarkers.forEach(m => m.setStyle({ color: col, fillColor: col }));
+    }
+}
+
+// Legacy single-bus alias kept so demoFit() still works
+let drv = { lat: null, lon: null, speed: 0, accuracy: null,
+            lastSeen: null, distKm: null, etaMin: null, trail: [], active: false };
+
+let _drvMarker  = null;
+let _drvTrail   = null;
+let _distLine   = null;
+let _collegeM   = null;
+
+// Bus colours — cycle through these for multiple buses
+const _BUS_COLORS = ['#00e5ff','#ff6d00','#00e676','#ffd740','#9d4edd','#ff1744','#2a9d8f','#e9c46a'];
+function _busColor(idx) { return _BUS_COLORS[idx % _BUS_COLORS.length]; }
+
+// Driver info cache: { bus_id: {name, email} } — loaded from /api/get-drivers
+let _driverInfo = {};
+async function _loadPublishedData() {
+    // Fetch persisted route geometry for ALL roles — needed to draw route lines + stop pins
+    try {
+        const gResp = await fetch('/api/route-geometry');
+        if (gResp.ok) {
+            const gData = await gResp.json();
+            if (gData.routes && Object.keys(gData.routes).length) {
+                window._publishedRoutes = gData.routes;
+            }
+        }
+    } catch(e) { /* silent */ }
+
+    // Fetch driver info — admin only
+    const role = document.querySelector('meta[name="user-role"]')?.content;
+    if (role !== 'admin') return;
+    try {
+        const resp = await fetch('/api/get-drivers');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        _driverInfo = {};
+        (data.assignments || []).forEach(a => {
+            if (a.bus_id && a.driver_email) {
+                _driverInfo[a.bus_id] = {
+                    name:  a.driver_name || a.driver_email,
+                    email: a.driver_email
+                };
+            }
+        });
+    } catch(e) { /* silent */ }
+}
+
+// ── Maths ──────────────────────────────────────────────────────
+function aiHav(la1, lo1, la2, lo2) {
+    const R = 6371, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
+    const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── Notification ───────────────────────────────────────────────
+function addAINotif(msg, type='info') {
+    const list = document.getElementById('ai-notif-list');
+    if (!list) return;
+    const d = document.createElement('div');
+    d.className = 'ai-notif ' + (type === 'info' ? 'info' : '');
+    d.textContent = msg;
+    list.insertBefore(d, list.firstChild);
+    while (list.children.length > 10) list.removeChild(list.lastChild);
+    if (type !== 'info') {
+        _alertCount++;
+        const el = document.getElementById('ai-h-alerts');
+        if (el) el.textContent = _alertCount;
+    }
+}
+
+// ── Map init ───────────────────────────────────────────────────
+function initAILeafletMap() {
+    if (aiLiveMap) return;
+    aiLiveMap = L.map('ai-leaflet-map', {zoomControl: true}).setView([9.65, 76.62], 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 19
+    }).addTo(aiLiveMap);
+
+    // College pin
+    _collegeM = L.marker([COLLEGE_PT.lat, COLLEGE_PT.lon], {
+        icon: L.divIcon({
+            className: '',
+            html: '<div style="background:#00e676;color:#050a14;width:38px;height:38px;border-radius:50%;'
+                + 'display:flex;align-items:center;justify-content:center;font-size:18px;'
+                + 'border:3px solid white;box-shadow:0 2px 14px rgba(0,230,118,0.6)">🎓</div>',
+            iconSize: [38, 38], iconAnchor: [19, 19]
+        })
+    }).addTo(aiLiveMap).bindPopup("<b>St. Joseph's College</b><br>Tracking destination");
+}
+
+// ── Bus icon — accepts a colour for multi-bus display ───────────
+function _busIcon(active, col) {
+    col = col || (active ? '#00e5ff' : '#ffd740');
+    const glow = active ? col.replace('#','rgba(') + ',0.35)' : 'rgba(255,215,64,0.25)';
+    return L.divIcon({
+        className: '',
+        html: '<div style="position:relative;width:44px;height:44px">'
+            + '<div style="position:absolute;inset:-5px;border-radius:50%;background:' + col
+            + ';opacity:0.25;animation:drvping 1.8s infinite"></div>'
+            + '<div style="position:absolute;inset:0;background:' + col
+            + ';border-radius:50%;display:flex;align-items:center;justify-content:center;'
+            + 'font-size:20px;border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.5)">🚌</div>'
+            + '</div>'
+            + '<style>@keyframes drvping{0%{transform:scale(1);opacity:.7}'
+            + '50%{transform:scale(1.5);opacity:.2}100%{transform:scale(1);opacity:.7}}</style>',
+        iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -24]
+    });
+}
+
+// ── Update Leaflet map — multi-bus ────────────────────────────
+function _updateMapBus(busId, state, colorIdx) {
+    if (!aiLiveMap) return;
+    const pos = [state.lat, state.lon];
+
+    // ── Deviation check ──────────────────────────────────────
+    const routePts = (window._publishedRoutes || {})[busId];
+    const prevDeviated = state.deviated || false;
+    if (routePts && routePts.length >= 2) {
+        const devM = _distToRoute(state.lat, state.lon, routePts);
+        state.deviated = devM > DEVIATION_THRESHOLD_M;
+        if (state.deviated && !prevDeviated) {
+            addAINotif('⚠️ ' + busId + ' — off route (' + Math.round(devM) + 'm)', 'alert');
+        } else if (!state.deviated && prevDeviated) {
+            addAINotif('✅ ' + busId + ' — back on route', 'info');
+        }
+    } else {
+        state.deviated = false;
+    }
+    const col = state.deviated ? '#ff1744' : _busColor(colorIdx);
+
+    if (!state.marker) {
+        state.marker = L.marker(pos, {icon: _busIcon(true, col), zIndexOffset: 1000}).addTo(aiLiveMap);
+    } else {
+        state.marker.setLatLng(pos);
+        state.marker.setIcon(_busIcon(state.active, col));
+    }
+    const deviatedLabel = state.deviated
+        ? '<br><span style="color:#ff1744;font-size:9px;font-weight:700">⚠️ OFF ROUTE</span>'
+        : '';
+    state.marker.bindPopup(
+        '<div style="font-family:Space Mono,monospace;font-size:11px;min-width:170px">'
+        + '<b style="font-size:13px;color:' + col + '">🚌 ' + busId + '</b> <span style="color:#00e676;font-size:9px">📡 LIVE</span>' + deviatedLabel + '<br>'
+        + '<hr style="margin:5px 0;border-color:#ccc">'
+        + '<b>Distance:</b> ' + state.distKm + ' km<br>'
+        + '<b>ETA:</b> ' + state.etaMin + ' min<br>'
+        + '<b>Speed:</b> ' + state.speed.toFixed(1) + ' km/h<br>'
+        + '<b>Accuracy:</b> ' + (state.accuracy ? state.accuracy.toFixed(0) + ' m' : '—') + '<br>'
+        + '<b>Lat/Lon:</b> ' + state.lat.toFixed(5) + ', ' + state.lon.toFixed(5)
+        + '</div>'
+    );
+
+    state.trail.push(pos);
+    if (state.trail.length > 25) state.trail.shift();
+    if (!state.trailLine) {
+        state.trailLine = L.polyline(state.trail, {color: col, weight: 3, opacity: 0.65}).addTo(aiLiveMap);
+    } else {
+        state.trailLine.setLatLngs(state.trail);
+        state.trailLine.setStyle({ color: col });
+    }
+
+    const dline = [pos, [COLLEGE_PT.lat, COLLEGE_PT.lon]];
+    if (!state.distLine) {
+        state.distLine = L.polyline(dline, {color: col, weight: 2, opacity: 0.4, dashArray: '8,7'}).addTo(aiLiveMap);
+    } else {
+        state.distLine.setLatLngs(dline);
+        state.distLine.setStyle({ color: col });
+    }
+
+    // ── Draw planned route line (appears when bus first connects) ──
+    _drawRouteLine(busId, state, colorIdx);
+}
+
+// Legacy single-bus wrapper (kept for student view)
+function _updateMap() {
+    if (drv.lat === null) return;
+    const st = _busState[Object.keys(_busState)[0]];
+    if (st) _updateMapBus(Object.keys(_busState)[0], st, 0);
+}
+
+// ── Update sidebar — multi-bus for admin, single-bus for student ──
+function _updateSidebar() {
+    const ROLE = document.querySelector('meta[name="user-role"]')?.content || 'admin';
+    const activeBuses = Object.keys(_busState).filter(id => _busState[id].active);
+
+    // Header stats
+    const s   = id => document.getElementById(id);
+    const set = (id, v) => { const el = s(id); if (el) el.textContent = v; };
+    set('ai-h-driver', activeBuses.length);
+
+    if (ROLE === 'admin') {
+        // ── Admin: render one card per bus dynamically ──────────
+        const container = s('admin-bus-panel');   // stable id — never wiped
+        if (!container) return;
+
+        const allBusIds = Object.keys(_busState);   // active + inactive
+
+        let html = '<div class="ai-sec-title">Buses — '
+            + activeBuses.length + ' Active'
+            + (allBusIds.length > activeBuses.length ? ' / ' + (allBusIds.length - activeBuses.length) + ' Offline' : '')
+            + '</div>';
+
+        if (allBusIds.length === 0) {
+            html += '<div style="font-family:Space Mono,monospace;font-size:9px;color:var(--trk-muted);padding:10px 4px">'
+                  + '⏳ No buses online yet</div>';
+        } else {
+            allBusIds.forEach((busId, idx) => {
+                const st     = _busState[busId];
+                const col    = st.active ? _busColor(idx) : '#484f58';
+                const info   = _driverInfo[busId] || {};
+                const dName  = info.name  || '—';
+                const dEmail = info.email || '—';
+
+                if (st.active) {
+                    const pct    = Math.min(100, (parseFloat(st.distKm) / 60) * 100);
+                    const barCol = pct < 20 ? '#00e676' : pct < 60 ? col : pct < 85 ? '#ffd740' : '#ff1744';
+                    const badge  = st.deviated
+                        ? `<span class="ai-sbadge alert" style="font-size:8px">⚠️ OFF ROUTE</span>`
+                        : `<span class="ai-sbadge ok"    style="font-size:8px">ACTIVE</span>`;
+                    html += `<div class="ai-bus-card" style="margin-bottom:10px;border-left:3px solid ${col}${st.deviated ? ';box-shadow:0 0 8px rgba(255,23,68,0.3)' : ''}">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <span style="font-family:Space Mono,monospace;font-size:11px;font-weight:700;color:${col}">🚌 ${busId}</span>
+                        ${badge}
+                      </div>
+                      <div style="font-family:Space Mono,monospace;font-size:8px;color:#e6edf3;margin-bottom:2px">👤 Driver: ${dName}</div>
+                      <div style="font-family:Space Mono,monospace;font-size:8px;color:var(--trk-muted);margin-bottom:8px">✉ ${dEmail}</div>
+                      <div class="ai-metrics" style="grid-template-columns:repeat(3,1fr)">
+                        <div class="ai-met"><div class="ai-met-v" style="color:${col}">${st.distKm}</div><div class="ai-met-l">km away</div></div>
+                        <div class="ai-met"><div class="ai-met-v">${st.etaMin}</div><div class="ai-met-l">ETA min</div></div>
+                        <div class="ai-met"><div class="ai-met-v">${st.speed.toFixed(1)}</div><div class="ai-met-l">km/h</div></div>
+                      </div>
+                      <div style="margin-top:6px;font-family:Space Mono,monospace;font-size:7px;color:var(--trk-muted);margin-bottom:3px">DISTANCE TO COLLEGE</div>
+                      <div class="ai-devbar"><div class="ai-devfill" style="width:${pct}%;background:${barCol}"></div></div>
+                      <div style="font-family:Space Mono,monospace;font-size:7px;color:var(--trk-muted);margin-top:5px">Last ping: ${st.lastSeen}s ago</div>
+                    </div>`;
+                } else {
+                    html += `<div class="ai-bus-card" style="margin-bottom:10px;border-left:3px solid #30363d;opacity:0.55">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <span style="font-family:Space Mono,monospace;font-size:11px;font-weight:700;color:#484f58">🚌 ${busId}</span>
+                        <span class="ai-sbadge warn" style="font-size:8px;background:#21262d">OFFLINE</span>
+                      </div>
+                      <div style="font-family:Space Mono,monospace;font-size:8px;color:#484f58;margin-bottom:2px">👤 Driver: ${dName}</div>
+                      <div style="font-family:Space Mono,monospace;font-size:8px;color:#30363d">✉ ${dEmail}</div>
+                    </div>`;
+                }
+            });
+        }
+        container.innerHTML = html;
+
+        // Update header stats from first active bus
+        if (activeBuses.length) {
+            const first = _busState[activeBuses[0]];
+            set('ai-h-dist', first.distKm);
+            set('ai-h-eta',  first.etaMin);
+        } else {
+            set('ai-h-dist', '—'); set('ai-h-eta', '—');
+        }
+
+    } else {
+        // ── Student: show single bus (legacy card) ──────────────
+        if (activeBuses.length === 0) {
+            if (s('drv-badge')) s('drv-badge').innerHTML = '<span style="color:#ffd740">⏳ WAITING</span>';
+            if (s('drv-status')) { s('drv-status').textContent = 'IDLE'; s('drv-status').className = 'ai-sbadge warn'; }
+            set('drv-dist','—'); set('drv-eta','—'); set('drv-spd','—'); set('drv-acc','—');
+            set('drv-coords','Lat: —   Lon: —'); set('drv-lastseen','Last ping: —');
+        } else {
+            const st = _busState[activeBuses[0]];
+            if (s('drv-badge')) s('drv-badge').innerHTML = '<span style="color:#00e676">📡 REAL GPS</span>';
+            if (s('drv-status')) { s('drv-status').textContent = 'ACTIVE'; s('drv-status').className = 'ai-sbadge ok'; }
+            set('drv-dist', st.distKm + ' km');
+            set('drv-eta',  st.etaMin + ' min');
+            set('drv-spd',  st.speed.toFixed(1));
+            set('drv-acc',  st.accuracy ? st.accuracy.toFixed(0) + ' m' : '—');
+            set('drv-coords', 'Lat: ' + st.lat.toFixed(5) + '   Lon: ' + st.lon.toFixed(5));
+            set('drv-lastseen', 'Last ping: ' + st.lastSeen + 's ago');
+            set('ai-h-dist', st.distKm);
+            set('ai-h-eta',  st.etaMin);
+            const pct = Math.min(100, (parseFloat(st.distKm) / 60) * 100);
+            if (s('drv-distbar')) {
+                s('drv-distbar').style.width = pct + '%';
+                s('drv-distbar').style.background = pct < 20 ? '#00e676' : pct < 60 ? '#00e5ff' : pct < 85 ? '#ffd740' : '#ff1744';
+            }
+        }
+    }
+
+    // GPS overlay tag (show count for admin, coords for student)
+    if (s('ai-gps-tag')) {
+        const ROLE2 = document.querySelector('meta[name="user-role"]')?.content || 'admin';
+        if (ROLE2 === 'admin' && activeBuses.length > 0) {
+            s('ai-gps-tag').textContent = '📡 ' + activeBuses.length + ' bus(es) live';
+            s('ai-gps-tag').style.color = '#00e676';
+        } else if (ROLE2 !== 'admin' && activeBuses.length > 0) {
+            const st = _busState[activeBuses[0]];
+            s('ai-gps-tag').textContent = '📡 ' + st.lat.toFixed(4) + ', ' + st.lon.toFixed(4);
+            s('ai-gps-tag').style.color = '#00e676';
+        } else {
+            s('ai-gps-tag').textContent = '📡 Waiting for phone…';
+            s('ai-gps-tag').style.color = '#ffd740';
+        }
+    }
+
+    if (s('ai-time-tag')) s('ai-time-tag').textContent = '🕐 ' + new Date().toLocaleTimeString();
+}
+
+// ── Poll /api/live-status — multi-bus ─────────────────────────
+async function _pollLiveStatus() {
+    try {
+        const resp = await fetch('/api/live-status');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const buses = data.buses || [];
+
+        // Mark all currently known buses as potentially stale
+        const seenIds = new Set();
+
+        buses.forEach((b, idx) => {
+            const id   = b.bus_id;
+            const dist = aiHav(b.lat, b.lon, COLLEGE_PT.lat, COLLEGE_PT.lon);
+            const spd  = b.speed || 0;
+            const eta  = spd > 1 ? (dist / spd * 60).toFixed(1) : '—';
+            seenIds.add(id);
+
+            const wasNew = !_busState[id];
+            if (wasNew) {
+                _busState[id] = {
+                    lat: b.lat, lon: b.lon, speed: spd, accuracy: b.accuracy || null,
+                    lastSeen: b.last_seen, distKm: dist.toFixed(2), etaMin: eta,
+                    trail: [], active: true,
+                    marker: null, trailLine: null, distLine: null
+                };
+                addAINotif('📡 ' + id + ' connected', 'info');
+            } else {
+                const st = _busState[id];
+                st.lat = b.lat; st.lon = b.lon; st.speed = spd;
+                st.accuracy = b.accuracy || null; st.lastSeen = b.last_seen;
+                st.distKm = dist.toFixed(2); st.etaMin = eta; st.active = true;
+            }
+            _updateMapBus(id, _busState[id], idx);
+        });
+
+        // Any bus not seen in this poll → remove from map entirely
+        Object.keys(_busState).forEach(id => {
+            if (!seenIds.has(id) && _busState[id].active) {
+                const st = _busState[id];
+                st.active = false;
+                // Remove all Leaflet layers for this bus
+                if (st.marker)    { aiLiveMap.removeLayer(st.marker);    st.marker    = null; }
+                if (st.trailLine) { aiLiveMap.removeLayer(st.trailLine); st.trailLine = null; }
+                if (st.distLine)  { aiLiveMap.removeLayer(st.distLine);  st.distLine  = null; }
+                if (st.routeLine) { aiLiveMap.removeLayer(st.routeLine); st.routeLine = null; }
+                (st.stopMarkers || []).forEach(m => aiLiveMap.removeLayer(m));
+                st.stopMarkers = []; st.trail = []; st.deviated = false;
+                addAINotif('🔴 ' + id + ' — stopped tracking', 'alert');
+            }
+        });
+
+        // Keep legacy drv in sync for demoFit() etc.
+        if (buses.length > 0) {
+            const st = _busState[buses[0].bus_id];
+            drv.lat = st.lat; drv.lon = st.lon; drv.active = st.active;
+        } else {
+            drv.active = false;
+        }
+
+        _updateSidebar();
+    } catch (e) { /* silent — polling continues */ }
+}
+
+// ── Fit map to show both bus and college ───────────────────────
+function demoFit() {
+    if (!aiLiveMap) return;
+    const active = Object.values(_busState).filter(s => s.active && s.lat !== null);
+    if (active.length === 0) {
+        aiLiveMap.setView([COLLEGE_PT.lat, COLLEGE_PT.lon], 11);
+        return;
+    }
+    const pts = active.map(s => [s.lat, s.lon]);
+    pts.push([COLLEGE_PT.lat, COLLEGE_PT.lon]);
+    aiLiveMap.fitBounds(L.latLngBounds(pts).pad(0.18));
+}
+
+function _startLivePolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(_pollLiveStatus, 5000);
+    _pollLiveStatus();   // immediate first hit
+}
+function _stopLivePolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+// ── Tracker init (called when tab opens) ──────────────────────
+function initAITracker() {
+    if (aiTrackerInited) return;
+    aiTrackerInited = true;
+    setTimeout(() => {
+        initAILeafletMap();
+        _loadPublishedData();   // fetch route geometry + driver info from server
+        _updateSidebar();
+        _startLivePolling();
+        _clockTimer = setInterval(() => {
+            const el = document.getElementById('ai-time-tag');
+            if (el) el.textContent = '🕐 ' + new Date().toLocaleTimeString();
+        }, 1000);
+    }, 200);
+}
+
+// ── Compat stubs so Route Builder and other existing code don't break
+let AI_BUSES = [], AI_ROUTES = {}, ROUTE_COLORS_MAP = {R1:'#00e5ff'};
+let aiStep = 0, aiNotifiedSet = new Set(), aiTimerID = null;
+let aiMarkers = {}, aiTrailLines = {}, aiRouteLayers = [], aiStopMarkers = [];
+let myGPSWatchId = null, myGPSBusIndex = null, myGPSMarker = null;
+let _liveStatusTimer = null, _liveGPSActive = false;
+function aiSimStep() {}
+function aiTick() {}
+function aiCenterOnMe() { demoFit(); }
+function makeBusIcon() { return _busIcon(false); }
+function updateBusMarkersOnMap() {}
+function updateAISidebar() {}
+
+// ═══════════════════════════════════════════════════════════════
+// ════════════  ROUTE BUILDER ENGINE  ═══════════════════════════
+// ═══════════════════════════════════════════════════════════════
+
+let rbMap=null, rbCurrentRoute=null, rbCurrentStops=[], rbTempMarkers=[], rbTempLine=null;
+let rbSavedRoutes=[];  // [{id,busId,color,waypoints}]
+const RB_DEFAULT_COLORS=['#00e5ff','#ff6d00','#00e676','#ffd740','#9d4edd','#ff1744'];
+
+function initRBMap(){
+    if(rbMap) return;
+    rbMap=L.map('rb-map').setView([9.65,76.62],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(rbMap);
+    // College marker
+    L.marker([COLLEGE_PT.lat,COLLEGE_PT.lon],{
+        icon:L.divIcon({className:'',html:'<div style="background:#1a4d2e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.3)">🎓</div>',iconSize:[32,32],iconAnchor:[16,16]})
+    }).addTo(rbMap).bindPopup('<b>College</b> — destination');
+    // Coordinate display on mousemove
+    rbMap.on('mousemove',e=>{
+        const cd=document.getElementById('rb-coord-display');
+        if(cd) cd.textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
+    });
+    // Click to add stop
+    rbMap.on('click',e=>{
+        if(!rbCurrentRoute) return;
+        rbAddStop(e.latlng.lat,e.latlng.lng,null);
+    });
+    rbRenderSavedRoutes();
+    rbRefreshSavedPanel();
+}
+
+function rbStartRoute(){
+    const rid=document.getElementById('rb-route-id').value.trim().toUpperCase();
+    const bid=document.getElementById('rb-bus-id').value.trim().toUpperCase();
+    const col=document.getElementById('rb-color').value;
+    if(!rid){ alert('Enter a Route ID first'); return; }
+    if(!bid){ alert('Enter a Bus ID first'); return; }
+    rbCurrentRoute={id:rid,busId:bid,color:col};
+    rbCurrentStops=[];
+    rbTempMarkers.forEach(m=>rbMap.removeLayer(m)); rbTempMarkers=[];
+    if(rbTempLine) rbMap.removeLayer(rbTempLine); rbTempLine=null;
+    document.getElementById('rb-mode-indicator').style.display='block';
+    document.getElementById('rb-stops-inner').textContent='Click the map to add stops. College is auto-added at end.';
+    rbUpdateStopList();
+    addAINotif('🛣️ Route '+rid+' builder started','info');
+}
+
+function rbAddStop(lat,lon,name){
+    if(!rbCurrentRoute) return;
+    const stopName=name||prompt('Stop name? (optional)','Stop '+(rbCurrentStops.length+1))||('Stop '+(rbCurrentStops.length+1));
+    rbCurrentStops.push({lat,lon,name:stopName});
+    const n=rbCurrentStops.length;
+    const m=L.marker([lat,lon],{
+        icon:L.divIcon({className:'',html:'<div style="background:'+rbCurrentRoute.color+';color:#050a14;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">'+n+'</div>',iconSize:[28,28],iconAnchor:[14,14]})
+    }).addTo(rbMap);
+    m.bindTooltip(n+'. '+stopName,{permanent:true,direction:'top',offset:[0,-14]});
+    rbTempMarkers.push(m);
+    // Update line
+    if(rbTempLine) rbMap.removeLayer(rbTempLine);
+    const pts=rbCurrentStops.map(s=>[s.lat,s.lon]);
+    pts.push([COLLEGE_PT.lat,COLLEGE_PT.lon]);
+    rbTempLine=L.polyline(pts,{color:rbCurrentRoute.color,weight:3,dashArray:'8,6',opacity:0.7}).addTo(rbMap);
+    rbUpdateStopList();
+}
+
+function rbUpdateStopList(){
+    const cnt=document.getElementById('rb-stop-count'); if(cnt) cnt.textContent='('+rbCurrentStops.length+')';
+    const inner=document.getElementById('rb-stops-inner');
+    if(!inner) return;
+    if(!rbCurrentStops.length){ inner.textContent='No stops yet. Click the map.'; return; }
+    inner.innerHTML=rbCurrentStops.map((s,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">'
+        +'<span style="background:var(--accent);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">'+(i+1)+'</span>'
+        +'<span style="flex:1;font-size:0.8rem">'+s.name+'</span>'
+        +'<span style="font-size:0.72rem;color:var(--text-light)">'+s.lat.toFixed(4)+','+s.lon.toFixed(4)+'</span>'
+        +'<button onclick="rbRemoveStop('+i+')" style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:12px">✕</button>'
+        +'</div>'
+    ).join('')
+    +'<div style="padding:5px 0;font-size:0.78rem;color:var(--accent);display:flex;align-items:center;gap:6px">🎓 College (auto)</div>';
+}
+
+function rbRemoveStop(i){
+    rbCurrentStops.splice(i,1);
+    // Rebuild markers
+    rbTempMarkers.forEach(m=>rbMap.removeLayer(m)); rbTempMarkers=[];
+    rbCurrentStops.forEach((s,j)=>{
+        const m=L.marker([s.lat,s.lon],{
+            icon:L.divIcon({className:'',html:'<div style="background:'+rbCurrentRoute.color+';color:#050a14;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;border:2px solid white">'+(j+1)+'</div>',iconSize:[28,28],iconAnchor:[14,14]})
+        }).addTo(rbMap);
+        m.bindTooltip((j+1)+'. '+s.name,{permanent:true,direction:'top',offset:[0,-14]});
+        rbTempMarkers.push(m);
+    });
+    if(rbTempLine) rbMap.removeLayer(rbTempLine);
+    if(rbCurrentStops.length){
+        const pts=rbCurrentStops.map(s=>[s.lat,s.lon]); pts.push([COLLEGE_PT.lat,COLLEGE_PT.lon]);
+        rbTempLine=L.polyline(pts,{color:rbCurrentRoute.color,weight:3,dashArray:'8,6',opacity:0.7}).addTo(rbMap);
+    }
+    rbUpdateStopList();
+}
+
+function rbFinishRoute(){
+    if(!rbCurrentRoute){ alert('Start a route first'); return; }
+    if(!rbCurrentStops.length){ alert('Add at least one stop'); return; }
+    // College always last
+    const waypoints=[...rbCurrentStops,{lat:COLLEGE_PT.lat,lon:COLLEGE_PT.lon,name:'College'}];
+    rbSavedRoutes.push({id:rbCurrentRoute.id,busId:rbCurrentRoute.busId,color:rbCurrentRoute.color,waypoints});
+    document.getElementById('rb-mode-indicator').style.display='none';
+    rbCurrentRoute=null; rbCurrentStops=[];
+    rbTempMarkers.forEach(m=>rbMap.removeLayer(m)); rbTempMarkers=[];
+    if(rbTempLine){rbMap.removeLayer(rbTempLine);rbTempLine=null;}
+    rbRefreshSavedPanel();
+    rbRenderSavedRoutes();
+    addAINotif('✅ Route saved — click "Apply to Live Tracker" to activate','info');
+    document.getElementById('rb-stop-count').textContent='(0)';
+    document.getElementById('rb-stops-inner').textContent='Route saved! Start another or apply to tracker.';
+}
+
+function rbCancelRoute(){
+    rbCurrentRoute=null; rbCurrentStops=[];
+    rbTempMarkers.forEach(m=>rbMap.removeLayer(m)); rbTempMarkers=[];
+    if(rbTempLine){rbMap.removeLayer(rbTempLine);rbTempLine=null;}
+    document.getElementById('rb-mode-indicator').style.display='none';
+    rbUpdateStopList();
+}
+
+function rbRenderSavedRoutes(){
+    if(!rbMap) return;
+    // Clear existing saved overlays (not temp)
+    rbSavedRoutes.forEach(r=>{
+        L.polyline(r.waypoints.map(w=>[w.lat,w.lon]),{color:r.color,weight:3,opacity:0.5}).addTo(rbMap);
+        r.waypoints.slice(0,-1).forEach(wp=>{
+            L.circleMarker([wp.lat,wp.lon],{radius:5,fillColor:r.color,color:'white',weight:1.5,fillOpacity:0.8}).addTo(rbMap).bindPopup('🚏 '+wp.name+' ('+r.id+')');
+        });
+    });
+}
+
+function rbRefreshSavedPanel(){
+    const cnt=document.getElementById('rb-saved-count'); if(cnt) cnt.textContent='('+rbSavedRoutes.length+')';
+    const panel=document.getElementById('rb-saved-routes'); if(!panel) return;
+    if(!rbSavedRoutes.length){ panel.innerHTML='<div style="font-size:0.82rem;color:var(--text-light)">No routes saved yet.</div>'; return; }
+    panel.innerHTML=rbSavedRoutes.map((r,i)=>'<div style="background:white;border-radius:6px;padding:10px;margin-bottom:8px;border-left:4px solid '+r.color+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div><b style="font-size:0.88rem">'+r.id+'</b> <span style="font-size:0.78rem;color:var(--text-light)">Bus: '+r.busId+'</span></div>'
+        +'<button onclick="rbDeleteRoute('+i+')" style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:13px">🗑️</button>'
+        +'</div>'
+        +'<div style="font-size:0.78rem;color:var(--text-light);margin-top:4px">'+r.waypoints.map(w=>w.name).join(' → ')+'</div>'
+        +'</div>'
+    ).join('');
+}
+
+function rbDeleteRoute(i){ rbSavedRoutes.splice(i,1); rbRefreshSavedPanel(); }
+
+function rbClearAll(){
+    if(confirm('Clear all saved routes?')){ rbSavedRoutes=[]; rbRefreshSavedPanel(); }
+}
+
+function rbApplyToTracker(){
+    if(!rbSavedRoutes.length){ alert('No routes saved yet. Build and finish at least one route.'); return; }
+    // Update AI_ROUTES and AI_BUSES with builder data
+    AI_ROUTES={};
+    AI_BUSES=[];
+    rbSavedRoutes.forEach((r,i)=>{
+        AI_ROUTES[r.id]=r.waypoints.map(w=>({lat:w.lat,lon:w.lon,name:w.name}));
+        ROUTE_COLORS_MAP[r.id]=r.color;
+        const firstWp=r.waypoints[0];
+        AI_BUSES.push({
+            id:r.busId, route:r.id,
+            lat:firstWp.lat, lon:firstWp.lon,
+            speed:30, progress:0, trail:[], driveMins:0, idle:0,
+            speedHist:[30,30,30,30,30], isRealGPS:false
+        });
+    });
+    // Reset tracker
+    if(aiLiveMap){
+        aiRouteLayers.forEach(l=>aiLiveMap.removeLayer(l)); aiRouteLayers=[];
+        aiStopMarkers.forEach(m=>aiLiveMap.removeLayer(m)); aiStopMarkers=[];
+        Object.values(aiMarkers).forEach(m=>aiLiveMap.removeLayer(m)); aiMarkers={};
+        Object.values(aiTrailLines).forEach(l=>aiLiveMap.removeLayer(l)); aiTrailLines={};
+        drawRouteLines(); drawStopMarkers(); initBusMarkers();
+    }
+    aiStep=0; aiNotifiedSet=new Set();
+    addAINotif('🛣️ '+rbSavedRoutes.length+' custom route(s) applied to Live Tracker','info');
+    const ha=document.getElementById('ai-h-buses'); if(ha) ha.textContent=AI_BUSES.length;
+    alert('Routes applied! Switch to the 🛰️ Live AI Tracking tab to see your buses.');
+}
+
+function rbRequestGPS(){
+    if(!navigator.geolocation){ document.getElementById('rb-gps-status').textContent='❌ Not supported'; return; }
+    document.getElementById('rb-gps-status').textContent='⏳ Requesting…';
+    navigator.geolocation.getCurrentPosition(pos=>{
+        const lat=pos.coords.latitude, lon=pos.coords.longitude;
+        document.getElementById('rb-gps-status').innerHTML='✅ GPS active — '+lat.toFixed(5)+', '+lon.toFixed(5)+'<br><small>GPS will update BUS101 in Live Tracker</small>';
+        // Pan route builder map to user
+        rbMap&&rbMap.setView([lat,lon],14);
+        // Start watching GPS for BUS101 (index 0)
+        if(AI_BUSES.length>0) aiStartRealGPS(0);
+        addAINotif('📡 GPS enabled — BUS101 position is now REAL','info');
+    },err=>{
+        document.getElementById('rb-gps-status').textContent='❌ Error: '+err.message;
+    },{enableHighAccuracy:true});
+}
+// ── INIT ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// DATASET SIMULATION: one-click run from AI Insights tab
+// ═══════════════════════════════════════════════════════════════
+async function runDatasetSimulation(){
+    const cap = BUS_CAPACITY_DEFAULT;
+    const spd = AVERAGE_SPEED_KPH;
+    const si  = document.getElementById('status-indicator');
+    if(si){ si.className = 'status-indicator status-processing'; si.textContent = `⚙️ Fetching risk scores for ${ACTIVE_DATE}…`; }
+
+    const students = getStudentsForActiveDate();
+    if(!students.length){ alert(`No students found for ${ACTIVE_DATE} in mock dataset`); return; }
+
+    try {
+        routeResults = await optimizeRoutes(students, cap, spd, ACTIVE_DATE);
+        studentData  = students;
+        updateAHPWeightsPanel();
+        document.getElementById('ahp-weights-panel').style.display = 'block';
+        if(si){ si.className = 'status-indicator status-completed'; si.textContent = `✓ Done — ${routeResults.routes.length} route(s) for ${ACTIVE_DATE} | risk scoring via risk_model.pkl`; }
+        displayResults();
+        switchTab('results', document.querySelectorAll('.tab')[1]);
+    } catch(e) {
+        if(si){ si.className = 'status-indicator status-error'; si.textContent = `✗ Error: ${e.message}`; }
+        console.error(e);
+    }
+}
+
+// ── Populate AI Insights dataset stats on tab open ─────────────
+function initInsightsPanel(){
+    const filtered = getStudentsForDate(ACTIVE_DATE);
+    const uniqueStops = [...new Set(filtered.map(s => s.boarding_point))];
+    const el = id => document.getElementById(id);
+    if(el('snap-ds-students'))  el('snap-ds-students').textContent  = filtered.length;
+    if(el('snap-ds-stops'))     el('snap-ds-stops').textContent     = uniqueStops.length;
+    if(el('snap-ds-weather'))   el('snap-ds-weather').textContent   = MOCK_WEATHER_DATA.length;
+    if(el('snap-ds-accidents')) el('snap-ds-accidents').textContent = '✓';  // model loaded; accident CSV is training-phase only
+    if(el('snap-ds-routes'))    el('snap-ds-routes').textContent    = MOCK_REFERENCE_ROUTES.length;
+    if(el('ds-date'))           el('ds-date').textContent           = ACTIVE_DATE;
+    if(el('w-students')) el('w-students').textContent = AHP_PRI[0];
+    if(el('w-dist'))     el('w-dist').textContent     = AHP_PRI[1];
+    if(el('w-cluster'))  el('w-cluster').textContent  = AHP_PRI[2];
+    if(el('w-d-cost'))   el('w-d-cost').textContent   = AHP_ROU[0];
+    if(el('w-a-cost'))   el('w-a-cost').textContent   = AHP_ROU[1];
+    if(el('w-r-cost'))   el('w-r-cost').textContent   = RISK_W;
+    if(el('w-cap'))      el('w-cap').textContent       = BUS_CAPACITY_DEFAULT;
+}
+
+// Hook insights panel init into switchTab
+const _origSwitchTab = switchTab;
+switchTab = function(name, btn){
+    _origSwitchTab(name, btn);
+    if(name === 'ai-insights') setTimeout(initInsightsPanel, 50);
+};
+
+generateCalendar();
+window.addEventListener('load', () => {
+    window.addEventListener('resize', resizeAICanvas);
+    const ROLE = document.querySelector('meta[name="user-role"]')?.content || 'admin';
+    if (ROLE === 'student') {
+        setTimeout(() => { initAILeafletMap(); _startLivePolling(); }, 500);
+    }
+});
+
+// ── EMAIL NOTIFICATIONS ────────────────────────────────────────
+function openNotifModal() {
+    if (!routeResults) { alert('Run optimization first.'); return; }
+    document.getElementById('notif-status').textContent = '';
+    document.getElementById('notif-status').style.color = 'var(--text-light)';
+    document.getElementById('notif-all').checked = true;
+    document.getElementById('notif-limit-row').style.display = 'none';
+    document.getElementById('notif-send-btn').disabled = false;
+    document.getElementById('notif-modal').classList.add('active');
+}
+
+function _buildNotifList() {
+    // Build a lookup: stopName (lowercase) → { bus, stop, eta }
+    // from the route results so we can find each student's assignment.
+    const stopRouteMap = {};
+    routeResults.routes.forEach(route => {
+        route.stops.slice(1).forEach(stop => {
+            const key = (stop.stopName || stop.name || '').toLowerCase().trim();
+            if (key && key !== 'college') {
+                stopRouteMap[key] = {
+                    bus:  route.id,
+                    stop: stop.stopName || stop.name,
+                    eta:  route.estimatedTime
+                };
+            }
+        });
+    });
+
+    // Also build stopName → {lat, lng} from routeResults for Maps link
+    const stopCoordsMap = {};
+    routeResults.routes.forEach(route => {
+        route.stops.forEach(stop => {
+            const key = (stop.stopName || stop.name || '').toLowerCase().trim();
+            if (key && key !== 'college' && stop.lat && (stop.lng || stop.lon)) {
+                stopCoordsMap[key] = { lat: stop.lat, lng: stop.lng || stop.lon };
+            }
+        });
+    });
+
+    // Iterate allStudentRows in CSV order — this preserves row 1 = index 0.
+    const list = [];
+    for (const row of allStudentRows) {
+        const key = (row.stop || '').toLowerCase().trim();
+        const assignment = stopRouteMap[key] || { bus: 'Unassigned', stop: row.stop || '—', eta: '—' };
+        const coords     = stopCoordsMap[key] || { lat: row.lat || '', lng: row.lon || row.lng || '' };
+        list.push({
+            name:     row.name  || '(unnamed)',
+            email:    row.email || '',
+            bus:      assignment.bus,
+            stop:     assignment.stop,
+            eta:      assignment.eta,
+            stop_lat: coords.lat ? parseFloat(coords.lat).toFixed(6) : '',
+            stop_lon: coords.lng ? parseFloat(coords.lng).toFixed(6) : ''
+        });
+    }
+    return list;
+}
+
+async function sendNotifications() {
+    const mode     = document.querySelector('input[name="notif-mode"]:checked').value;
+    const n        = parseInt(document.getElementById('notif-n').value) || 3;
+    const statusEl = document.getElementById('notif-status');
+    const sendBtn  = document.getElementById('notif-send-btn');
+    const students = _buildNotifList();
+    if (!students.length) {
+        statusEl.textContent = '⚠️ No student data. Upload a CSV with names and stops first.';
+        return;
+    }
+    const count = mode === 'limit' ? Math.min(n, students.length) : students.length;
+    statusEl.style.color = 'var(--text-light)';
+    statusEl.textContent = 'Sending to ' + count + ' student(s)…';
+    sendBtn.disabled = true;
+    try {
+        const resp = await fetch('/api/send-notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ students, mode, n })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            statusEl.style.color = '#e63946';
+            statusEl.textContent = '✗ ' + (data.error || 'Server error');
+            sendBtn.disabled = false;
+            return;
+        }
+        statusEl.style.color = '#2a9d8f';
+        statusEl.textContent = '✓ Sent: ' + data.sent + '   Failed: ' + data.failed;
+        if (data.errors && data.errors.length)
+            statusEl.textContent += ' — ' + data.errors.slice(0, 2).join('; ');
+    } catch(e) {
+        statusEl.style.color = '#e63946';
+        statusEl.textContent = '✗ Network error: ' + e.message;
+        sendBtn.disabled = false;
+    }
+}
+
+
+// ── DRIVER ASSIGNMENT ─────────────────────────────────────────
+let _assignDrivers = [];   // [{name, email}] loaded from drivers.csv upload
+
+function openAssignModal() {
+    if (!routeResults || !routeResults.routes.length) {
+        alert('Run Route Optimization first — bus IDs are generated from the results.');
+        return;
+    }
+    document.getElementById('assign-status').textContent = '';
+    document.getElementById('assign-status').style.color = 'var(--text-light)';
+    document.getElementById('assign-modal').classList.add('active');
+    // If drivers already loaded from a previous session, render immediately
+    if (_assignDrivers.length) _renderAssignTable();
+}
+
+function uploadDriversCSV() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.csv';
+    inp.onchange = e => {
+        const reader = new FileReader();
+        reader.onload = ev => _parseDriversCSV(ev.target.result);
+        reader.readAsText(e.target.files[0]);
+    };
+    inp.click();
+}
+
+function _parseDriversCSV(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    if (!lines.length) { alert('Empty file'); return; }
+    const headers = lines[0].split(',').map(h => h.toLowerCase().trim());
+    const iName  = headers.findIndex(h => h === 'name');
+    const iEmail = headers.findIndex(h => h === 'email');
+    if (iName < 0 || iEmail < 0) {
+        alert('drivers.csv must have "Name" and "Email" columns.');
+        return;
+    }
+    _assignDrivers = [];
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(s => s.replace(/"/g,'').trim());
+        const name  = cols[iName]  || '';
+        const email = cols[iEmail] || '';
+        if (name && email) _assignDrivers.push({ name, email });
+    }
+    document.getElementById('assign-drivers-status').textContent =
+        `✓ ${_assignDrivers.length} driver(s) loaded`;
+    _renderAssignTable();
+}
+
+function _renderAssignTable() {
+    const buses = routeResults.routes.map(r => r.id);
+    const tbody = document.getElementById('assign-tbody');
+    tbody.innerHTML = '';
+
+    // Create one <select> per bus, all sharing the same driver pool
+    const selects = [];   // keep refs so we can cross-update them
+
+    buses.forEach(busId => {
+        const safeId = busId.replace(/\s+/g, '-');
+        const tr = document.createElement('tr');
+        tr.style.cssText = 'border-bottom:1px solid var(--border)';
+        tr.innerHTML = `
+          <td style="padding:10px 12px;font-weight:600;color:var(--primary)">${busId}</td>
+          <td style="padding:10px 12px">
+            <select id="assign-sel-${safeId}"
+                    style="width:100%;padding:7px 10px;border:1px solid var(--border);
+                           border-radius:6px;font-size:0.85rem;background:var(--bg)">
+              <option value="">— Unassigned —</option>
+              ${_assignDrivers.map(d =>
+                  `<option value="${d.email}" data-name="${d.name}">${d.name}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td style="padding:10px 12px;font-size:0.8rem;color:var(--text-light)"
+              id="assign-email-${safeId}">—</td>`;
+        tbody.appendChild(tr);
+        selects.push(tr.querySelector('select'));
+    });
+
+    // After a selection, disable that driver in every OTHER dropdown
+    // and re-enable them if they get deselected
+    function _syncDropdowns(changedSel) {
+        // Collect all currently chosen emails (excluding blank/unassigned)
+        const chosen = new Set(
+            selects.map(s => s.value).filter(v => v !== '')
+        );
+        selects.forEach(s => {
+            const myVal = s.value;
+            Array.from(s.options).forEach(opt => {
+                if (opt.value === '') return;   // always keep "— Unassigned —"
+                if (opt.value === myVal) {
+                    opt.disabled = false;       // always keep own current choice selectable
+                } else {
+                    opt.disabled = chosen.has(opt.value);  // disable if chosen elsewhere
+                }
+            });
+        });
+    }
+
+    selects.forEach((sel, idx) => {
+        const busId  = buses[idx];
+        const safeId = busId.replace(/\s+/g, '-');
+        sel.addEventListener('change', () => {
+            // Update email column
+            document.getElementById('assign-email-' + safeId).textContent = sel.value || '—';
+            // Sync disabled state across all dropdowns
+            _syncDropdowns(sel);
+        });
+    });
+
+    document.getElementById('assign-table-wrap').style.display = 'block';
+}
+
+async function saveAssignments() {
+    // Cache route geometries for the live tracking map
+    // Format: { "Route 1": [{lat, lng}, ...], ... }
+    window._publishedRoutes = {};
+    if (routeResults && routeResults.routes) {
+        routeResults.routes.forEach(route => {
+            window._publishedRoutes[route.id] = route.stops.map(s => ({
+                lat:  parseFloat(s.lat),
+                lng:  parseFloat(s.lng || s.lon),
+                name: s.stopName || s.name || ''
+            })).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+        });
+    }
+
+    const buses = routeResults.routes.map(r => r.id);
+    const assignments = [];
+    let hasUnassigned = false;
+
+    buses.forEach(busId => {
+        const selId = 'assign-sel-' + busId.replace(/\s+/g,'-');
+        const sel   = document.getElementById(selId);
+        const email = sel ? sel.value : '';
+        const opt   = sel ? sel.selectedOptions[0] : null;
+        const driverName = opt ? (opt.getAttribute('data-name') || '') : '';
+        if (!email) { hasUnassigned = true; }
+        assignments.push({ bus_id: busId, driver_name: driverName, driver_email: email });
+    });
+
+    if (hasUnassigned) {
+        if (!confirm('Some buses have no driver assigned. Continue anyway?')) return;
+    }
+
+    // Build student→bus map from routeResults so backend filters live-status per student
+    const student_map = {};
+    if (routeResults && routeResults.routes && allStudentRows) {
+        // Build stop→route lookup
+        const stopRoute = {};
+        routeResults.routes.forEach(route => {
+            (route.stops || []).forEach(stop => {
+                const sn = (stop.name || stop.stopName || '').toLowerCase();
+                if (sn) stopRoute[sn] = route.id;
+            });
+        });
+        allStudentRows.forEach(row => {
+            if (row.email) {
+                const busId = stopRoute[(row.stop || '').toLowerCase()];
+                if (busId) student_map[row.email.toLowerCase()] = busId;
+            }
+        });
+    }
+
+    const statusEl = document.getElementById('assign-status');
+    statusEl.style.color = 'var(--text-light)';
+    statusEl.textContent = 'Saving…';
+
+    try {
+        const resp = await fetch('/api/save-assignments', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ assignments, student_map, route_geometry: window._publishedRoutes || {} })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            statusEl.style.color = '#e63946';
+            statusEl.textContent = '✗ ' + (data.error || 'Server error');
+            return;
+        }
+        statusEl.style.color = '#2a9d8f';
+        statusEl.textContent = `✓ Saved — ${data.assigned} driver(s) assigned. Routes published. bus_assignments.csv saved next to app.py. Drivers & students can now log in.`;
+
+    } catch(e) {
+        statusEl.style.color = '#e63946';
+        statusEl.textContent = '✗ Network error: ' + e.message;
+    }
+}
+
+</script>
+
+<!-- ── EMAIL NOTIFICATION MODAL ─────────────────────────────── -->
+<div id="notif-modal" class="modal">
+    <div class="modal-content" style="max-width:440px">
+        <div class="modal-header">
+            <h2>📧 Send Route Notifications</h2>
+            <button class="close-btn" onclick="closeModal('notif-modal')">&times;</button>
+        </div>
+        <div style="padding:24px">
+            <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:18px;line-height:1.6">
+                Emails will be sent to students with their assigned bus number, boarding stop, and estimated arrival time.
+            </p>
+
+            <!-- Mode selector -->
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem">
+                    <input type="radio" name="notif-mode" value="all" id="notif-all" checked
+                           onchange="document.getElementById('notif-limit-row').style.display='none'">
+                    <span><b>Send to all students</b></span>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem">
+                    <input type="radio" name="notif-mode" value="limit" id="notif-limit"
+                           onchange="document.getElementById('notif-limit-row').style.display='flex'">
+                    <span><b>Send to first N students</b> <span style="color:var(--text-light);font-size:0.8rem">(demo mode)</span></span>
+                </label>
+                <div id="notif-limit-row" style="display:none;align-items:center;gap:10px;padding-left:26px">
+                    <label style="font-size:0.85rem;color:var(--text-light)">N =</label>
+                    <input type="number" id="notif-n" value="3" min="1"
+                           style="width:70px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;background:var(--bg)">
+                    <span style="font-size:0.8rem;color:var(--text-light)">students</span>
+                </div>
+            </div>
+
+            <!-- Status line -->
+            <p id="notif-status" style="font-size:0.82rem;color:var(--text-light);min-height:1.2em;margin-bottom:16px"></p>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-secondary" onclick="closeModal('notif-modal')">Cancel</button>
+                <button class="btn btn-primary"   onclick="sendNotifications()" id="notif-send-btn"
+                        style="background:#1a4d2e;color:#fff;border-color:#1a4d2e">Send Emails</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── ASSIGN DRIVERS MODAL ──────────────────────────────────── -->
+<div id="assign-modal" class="modal">
+  <div class="modal-content" style="max-width:620px">
+    <div class="modal-header">
+      <h2>🚌 Assign Drivers to Buses</h2>
+      <button class="close-btn" onclick="closeModal('assign-modal')">&times;</button>
+    </div>
+    <div style="padding:24px">
+
+      <!-- Step 1: Upload drivers.csv -->
+      <div id="assign-step1">
+        <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:16px;line-height:1.6">
+          Upload <b>drivers.csv</b> (columns: Name, Email) to load your driver list,
+          then assign each generated bus to a driver.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+          <button class="btn btn-secondary" onclick="uploadDriversCSV()">📁 Upload drivers.csv</button>
+          <span id="assign-drivers-status" style="font-size:0.82rem;color:var(--text-light)">No file loaded</span>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-light);margin-bottom:20px">
+          Expected format: <code>Name,Email</code>
+        </p>
+      </div>
+
+      <!-- Assignment table — shown after drivers loaded -->
+      <div id="assign-table-wrap" style="display:none">
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;margin-bottom:20px">
+          <thead>
+            <tr style="background:var(--primary);color:white">
+              <th style="padding:10px 12px;text-align:left;border-radius:6px 0 0 0">Bus ID</th>
+              <th style="padding:10px 12px;text-align:left">Assigned Driver</th>
+              <th style="padding:10px 12px;text-align:left;border-radius:0 6px 0 0">Email</th>
+            </tr>
+          </thead>
+          <tbody id="assign-tbody"></tbody>
+        </table>
+
+        <p id="assign-status" style="font-size:0.82rem;color:var(--text-light);min-height:1.2em;margin-bottom:14px"></p>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-secondary" onclick="closeModal('assign-modal')">Cancel</button>
+          <button class="btn btn-primary" onclick="saveAssignments()"
+                  style="background:#4361ee;border-color:#4361ee">
+            💾 Save &amp; Publish Routes
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

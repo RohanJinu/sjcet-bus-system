@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bus 1 — GPS Tracker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0d1117; color: #e6edf3;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 28px 16px 24px; gap: 12px;
+}
+h1 { font-size: 1.25rem; font-weight: 800; color: #00e5ff; letter-spacing: 0.05em; }
+.sub { font-size: 0.75rem; color: #484f58; text-transform: uppercase; letter-spacing: 0.06em; margin-top: -6px; }
+
+/* ── Diagnostic log ── */
+#diag {
+  width: 100%; max-width: 380px;
+  background: #0d1117; border: 1px solid #30363d; border-radius: 10px;
+  padding: 10px 12px; font-family: "SF Mono", monospace; font-size: 0.75rem;
+  color: #8b949e; max-height: 200px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.diag-ok   { color: #3fb950; }
+.diag-warn { color: #ffd740; }
+.diag-err  { color: #f85149; }
+.diag-info { color: #58a6ff; }
+
+/* ── Big status circle ── */
+.pulse-wrap { position: relative; width: 130px; height: 130px; }
+.pulse-ring {
+  position: absolute; inset: -10px; border-radius: 50%; opacity: 0;
+}
+@keyframes rp { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(1.4);opacity:0} }
+.pulse-ring.active { background: rgba(0,229,255,.2); animation: rp 1.8s ease-out infinite; }
+.pulse-ring.err    { background: rgba(218,54,51,.15); }
+
+.sc {
+  width: 130px; height: 130px; border-radius: 50%;
+  border: 3px solid #21262d; background: #161b22;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  transition: border-color .4s, background .4s; position: relative; z-index: 1;
+}
+.sc.idle    { border-color: #30363d; }
+.sc.waiting { border-color: #ffd740; }
+.sc.active  { border-color: #00e5ff; background: rgba(0,229,255,.06); }
+.sc.err     { border-color: #da3633; }
+.sc.stopped { border-color: #484f58; }
+
+.sc-icon  { font-size: 2rem; line-height: 1; }
+.sc-lbl   { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #484f58; }
+.sc-state { font-size: .68rem; font-weight: 800; letter-spacing: .07em; }
+.sc-state.idle    { color: #484f58; }
+.sc-state.waiting { color: #ffd740; }
+.sc-state.active  { color: #00e5ff; }
+.sc-state.err     { color: #da3633; }
+.sc-state.stopped { color: #484f58; }
+
+/* ── Stats card ── */
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; width: 100%; max-width: 380px; }
+.row  { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; border-bottom: 1px solid #21262d; font-size: .83rem; }
+.row:last-child { border-bottom: none; }
+.rl { color: #8b949e; }
+.rv { font-family: "SF Mono", monospace; font-size: .78rem; color: #e6edf3; text-align: right; max-width: 58%; word-break: break-all; }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 10px; width: 100%; max-width: 380px; }
+.btn { flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: .95rem; font-weight: 800; cursor: pointer; transition: opacity .2s, transform .1s; }
+.btn:active  { transform: scale(.97); }
+.btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+.btn-start { background: #238636; color: #fff; }
+.btn-stop  { background: #da3633; color: #fff; }
+
+.hint { font-size: .7rem; color: #484f58; text-align: center; max-width: 340px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div style="width:100%;max-width:400px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+  <div>
+    <h1 style="margin:0">📡 Driver Console</h1>
+    <p class="sub" style="margin:0">{{ driver_name }} — Live GPS Tracking</p>
+  </div>
+  <a href="/logout"
+     onclick="if(tracking){stopTracking();} return confirm('Stop tracking and log out?')"
+     style="font-size:0.72rem;font-weight:700;color:#484f58;text-decoration:none;
+            border:1px solid #30363d;border-radius:6px;padding:6px 12px;
+            font-family:-apple-system,sans-serif;letter-spacing:0.04em"
+     onmouseover="this.style.color='#f85149';this.style.borderColor='#f85149'"
+     onmouseout="this.style.color='#484f58';this.style.borderColor='#30363d'">
+    ⏻ Logout
+  </a>
+</div>
+
+<!-- Diagnostic log — shows exactly what's happening -->
+<div id="diag"><span class="diag-info">▶ Starting diagnostics…</span></div>
+
+<!-- Status circle -->
+<div class="pulse-wrap">
+  <div class="pulse-ring" id="pr"></div>
+  <div class="sc idle" id="sc">
+    <div class="sc-icon" id="sc-icon">🚌</div>
+    <div class="sc-lbl">Status</div>
+    <div class="sc-state idle" id="sc-st">READY</div>
+  </div>
+</div>
+
+<!-- Assigned Bus Display -->
+<div class="card" id="bus-assign-card">
+  <div class="row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:16px">
+    <span class="rl" style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:#484f58">Assigned Bus</span>
+    {% if assigned_bus %}
+    <span style="font-size:1.4rem;font-weight:800;color:#00e5ff;font-family:'SF Mono',monospace;letter-spacing:0.04em">
+      🚌 {{ assigned_bus }}
+    </span>
+    <span style="font-size:0.72rem;color:#3fb950">✓ Assignment confirmed by SJCET Management</span>
+    {% else %}
+    <span style="font-size:1rem;font-weight:700;color:#ffd740">⚠️ No bus assigned yet</span>
+    <span style="font-size:0.72rem;color:#484f58;line-height:1.6">
+      Contact the SJCET Management.<br>Admin must run optimization and assign drivers first.
+    </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="card">
+  <div class="row"><span class="rl">🚌 Bus ID</span> <span class="rv" style="color:#00e5ff;font-weight:700">{% if assigned_bus %}{{ assigned_bus }}{% else %}—{% endif %}</span></div>
+  <div class="row"><span class="rl">📍 Latitude</span> <span class="rv" id="v-lat">—</span></div>
+  <div class="row"><span class="rl">📍 Longitude</span><span class="rv" id="v-lon">—</span></div>
+  <div class="row"><span class="rl">⚡ Speed</span>    <span class="rv" id="v-spd">—</span></div>
+  <div class="row"><span class="rl">🎯 Accuracy</span> <span class="rv" id="v-acc">—</span></div>
+  <div class="row"><span class="rl">🖥️ Server</span>   <span class="rv" id="v-srv">—</span></div>
+  <div class="row"><span class="rl">⏱ Last sent</span><span class="rv" id="v-sent">—</span></div>
+</div>
+
+<!-- Buttons -->
+<div class="btn-row">
+  <button class="btn btn-start" id="btn-start" onclick="startTracking()"
+    {% if not assigned_bus %}disabled title="No bus assigned"{% endif %}>▶ Start Tracking</button>
+  <button class="btn btn-stop"  id="btn-stop"  onclick="stopTracking()" disabled>■ Stop</button>
+</div>
+
+{% if assigned_bus %}
+<p class="hint">
+  Tap <b>Start Tracking</b> → tap <b>Allow</b> when your browser asks for location.<br>
+  Your position will be broadcast as <b>{{ assigned_bus }}</b>. Keep this page open while moving.
+</p>
+{% else %}
+<p class="hint" style="color:#ffd740">
+  You cannot start tracking until a bus has been assigned to you.<br>
+  Please contact the SJCET Management.
+</p>
+{% endif %}
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const INTERVAL   = 5000;
+// Bus ID is assigned server-side by admin. Injected here by Flask.
+const ASSIGNED_BUS = {{ assigned_bus | tojson }};
+
+function getSelectedBusId() { return ASSIGNED_BUS || ''; }
+
+// ── State ─────────────────────────────────────────────────────
+let watchId = null, timer = null, lastPos = null;
+let tracking = false, sends = 0;
+
+// ── Diagnostic logger ─────────────────────────────────────────
+function log(msg, cls='diag-info') {
+  const d = document.getElementById('diag');
+  const s = document.createElement('span');
+  s.className = cls;
+  s.textContent = new Date().toLocaleTimeString('en',{hour12:false}) + ' ' + msg;
+  d.appendChild(s);
+  d.scrollTop = d.scrollHeight;
+}
+
+// ── DOM helpers ───────────────────────────────────────────────
+const el  = id => document.getElementById(id);
+const set = (id, v) => { const e=el(id); if(e) e.textContent=v; };
+
+function setCircle(state, icon, label) {
+  el('sc').className    = 'sc ' + state;
+  el('pr').className    = 'pulse-ring ' + (state==='active' ? 'active' : state==='err' ? 'err' : '');
+  el('sc-icon').textContent = icon;
+  el('sc-st').className = 'sc-state ' + state;
+  el('sc-st').textContent = label;
+}
+
+// ── Run diagnostics on page load ──────────────────────────────
+(function runDiag() {
+  // 0. Assigned bus
+  if (ASSIGNED_BUS) {
+    log('✓ Assigned bus: ' + ASSIGNED_BUS, 'diag-ok');
+  } else {
+    log('✗ No bus assigned — contact SJCET Management', 'diag-err');
+  }
+
+  // 1. Protocol
+  const proto = location.protocol;
+  if (proto === 'https:') {
+    log('✓ Protocol: HTTPS (good)', 'diag-ok');
+  } else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    log('✓ Protocol: localhost (geolocation allowed)', 'diag-ok');
+  } else {
+    log('✗ Protocol: HTTP on non-localhost — geolocation BLOCKED by browser!', 'diag-err');
+    log('  → Open the ngrok https:// URL, not a local IP.', 'diag-err');
+  }
+
+  // 2. Geolocation API available?
+  if ('geolocation' in navigator) {
+    log('✓ navigator.geolocation: available', 'diag-ok');
+  } else {
+    log('✗ navigator.geolocation: NOT available in this browser', 'diag-err');
+  }
+
+  // 3. Permissions API (modern browsers)
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      const s = result.state; // 'granted' | 'prompt' | 'denied'
+      if (s === 'granted') {
+        log('✓ Location permission: already GRANTED', 'diag-ok');
+      } else if (s === 'prompt') {
+        log('ℹ Location permission: will PROMPT on Start (this is normal)', 'diag-info');
+      } else {
+        log('✗ Location permission: DENIED in browser settings', 'diag-err');
+        log('  → Go to browser Settings → Site Settings → Location → allow this site', 'diag-err');
+      }
+      // Watch for permission changes
+      result.onchange = () => {
+        log('ℹ Permission changed to: ' + result.state,
+          result.state === 'granted' ? 'diag-ok' : 'diag-warn');
+      };
+    }).catch(() => {
+      log('ℹ Permissions API not supported — will find out on Start', 'diag-warn');
+    });
+  } else {
+    log('ℹ Permissions API unavailable — will find out on Start', 'diag-warn');
+  }
+
+  // 4. User agent (helpful for debugging)
+  log('ℹ Browser: ' + navigator.userAgent.slice(0,60), 'diag-info');
+})();
+
+// ── GPS callbacks ─────────────────────────────────────────────
+function onPosition(pos) {
+  lastPos = pos;
+  const { latitude:lat, longitude:lon, speed, accuracy } = pos.coords;
+  const spd = speed != null ? (speed*3.6).toFixed(1)+' km/h' : '—';
+
+  setCircle('active', '📡', 'TRACKING');
+  set('v-lat', lat.toFixed(6));
+  set('v-lon', lon.toFixed(6));
+  set('v-spd', spd);
+  set('v-acc', accuracy ? accuracy.toFixed(0)+' m' : '—');
+  log('✓ GPS fix: '+lat.toFixed(4)+', '+lon.toFixed(4)+' acc:'+Math.round(accuracy)+'m', 'diag-ok');
+}
+
+function onGPSError(err) {
+  const codes = {
+    1: 'PERMISSION_DENIED — tap Allow, or enable Location in browser site settings',
+    2: 'POSITION_UNAVAILABLE — turn on Location/GPS in phone Settings',
+    3: 'TIMEOUT — move to open area and retry',
+  };
+  const msg = codes[err.code] || err.message;
+  setCircle('err', '❌', 'ERROR');
+  set('v-lat', '—'); set('v-lon', '—');
+  log('✗ GPS error '+err.code+': '+msg, 'diag-err');
+
+  // Extra help for permission denied
+  if (err.code === 1) {
+    log('  → Chrome: tap 🔒 in address bar → Site settings → Location → Allow', 'diag-warn');
+    log('  → Safari: Settings app → Safari → Location → Allow', 'diag-warn');
+    log('  → Also check: Phone Settings → Privacy → Location Services → Browser → While Using', 'diag-warn');
+  }
+}
+
+// ── Send GPS to Flask ─────────────────────────────────────────
+async function sendGPS() {
+  if (!lastPos || !tracking) return;
+  const { latitude:lat, longitude:lon, speed } = lastPos.coords;
+  try {
+    const resp = await fetch('/api/gps-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bus_id: getSelectedBusId(), lat, lon,
+        speed: speed != null ? parseFloat((speed*3.6).toFixed(2)) : 0,
+        timestamp: new Date().toISOString()
+      })
+    });
+    sends++;
+    set('v-srv',  resp.ok ? '✅ OK' : '⚠️ HTTP '+resp.status);
+    set('v-sent', new Date().toLocaleTimeString()+' (#'+sends+')');
+    if (sends === 1) log('✓ First ping sent to server successfully', 'diag-ok');
+  } catch(e) {
+    set('v-srv', '❌ '+e.message);
+    log('✗ Server send failed: '+e.message, 'diag-err');
+  }
+}
+
+// ── Controls ─────────────────────────────────────────────────
+function startTracking() {
+  if (!navigator.geolocation) {
+    log('✗ Cannot start: geolocation API missing', 'diag-err');
+    return;
+  }
+  const busId = getSelectedBusId();
+  if (!busId) {
+    log('✗ Select or enter a Bus ID before starting', 'diag-err');
+    return;
+  }
+  log('ℹ Starting tracking for assigned bus: ' + busId, 'diag-info');
+  tracking = true; sends = 0; lastPos = null;
+  el('btn-start').disabled = true;
+  el('btn-stop').disabled  = false;
+  setCircle('waiting', '⏳', 'LOCATING…');
+  log('▶ Requesting location — watch for browser permission popup…', 'diag-info');
+
+  // This line triggers the OS/browser permission popup
+  watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
+    enableHighAccuracy: true,
+    timeout:            20000,
+    maximumAge:         3000
+  });
+  timer = setInterval(sendGPS, INTERVAL);
+}
+
+function stopTracking() {
+  tracking = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearInterval(timer); timer = null;
+  el('btn-start').disabled = false;
+  el('btn-stop').disabled  = true;
+  setCircle('stopped', '⏸', 'STOPPED');
+  log('■ Tracking stopped — notifying server…', 'diag-warn');
+  // Tell the server immediately so admin/student maps update at next poll
+  fetch('/api/gps-stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then(r => r.json())
+    .then(() => log('✓ Server notified — bus removed from live map', 'diag-ok'))
+    .catch(() => log('⚠ Could not notify server (will time out in 30s)', 'diag-warn'));
+}
+
+// Screen-awake: silent audio (needs user gesture — fires on first tap)
+document.addEventListener('click', () => {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const b = ctx.createBuffer(1,1,22050);
+    const s = ctx.createBufferSource();
+    s.buffer=b; s.connect(ctx.destination); s.start(0);
+  } catch(e) {}
+}, { once: true });
+</script>
+</body>
+</html>
