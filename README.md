@@ -244,18 +244,26 @@ ngrok displays a URL like `https://a1b2-103-21-56.ngrok-free.app`
 
 ## 📄 CSV File Formats
 
-### `students.csv` and `drivers.csv`
+### `drivers.csv` — login authentication list
 ```csv
-name,email
+Name,Email
+Bijo Kurian,bijo.kurian@sjcetpalai.ac.in
+Shaji Thomas,shaji.thomas@sjcetpalai.ac.in
+```
+
+### `students.csv` — login authentication list
+```csv
+Name,Email
 Arun Kumar,arun.kumar@sjcetpalai.ac.in
 Priya Thomas,priya.thomas@sjcetpalai.ac.in
 ```
 
-### Student data CSV (uploaded by admin in portal)
+### Student data CSV (uploaded by admin in the portal)
 ```csv
-id,name,email,stop
+Student ID,Name,Email,Stop Name
 1,Arun Kumar,arun.kumar@sjcetpalai.ac.in,Pala
 2,Priya Thomas,priya.thomas@sjcetpalai.ac.in,Erattupetta
+3,Renjith Babu,renjith.babu@sjcetpalai.ac.in,Kanjirappally
 ```
 > Add optional `lat` and `lon` columns to skip geocoding for known stops.
 
